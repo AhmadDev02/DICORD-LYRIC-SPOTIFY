@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
           headers: { Authorization: `Bearer ${spotifyToken}` },
         });
 
-        if (res.status === 401) {
+        if (res.status === 401 || res.status === 403) {
           removeSecureToken('spotify_access_token');
           return false;
         }
