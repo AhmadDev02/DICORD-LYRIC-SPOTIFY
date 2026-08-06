@@ -3,12 +3,16 @@ import { isAuthorized, startAuthServer, getCurrentlyPlaying } from './src/spotif
 import { fetchLyrics, getActiveLyricLine } from './src/lyrics.js';
 import { DiscordGatewayClient, fetchDiscordSpotifyPresence } from './src/discord.js';
 import { StatusBalancer } from './src/balancer.js';
+import { verifyProjectIntegrity, AUTHOR_NAME, COPYRIGHT_NOTICE } from './src/copyright.js';
 
 console.log(`
 \x1b[36m=====================================================
   🎵 DISCORD SPOTIFY LYRIC STATUS ENGINE 🎵
+  Copyright (c) 2026 ${AUTHOR_NAME}. All Rights Reserved.
 =====================================================\x1b[0m
 `);
+
+verifyProjectIntegrity();
 
 if (!config.discordToken) {
   console.error(`\x1b[31m[CONFIG ERROR] DISCORD_TOKEN is missing in .env!\x1b[0m`);

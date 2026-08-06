@@ -31,6 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
     offsetInput.value = storedOffset;
   }
 
+  // Check Copyright Integrity
+  const footerText = document.querySelector('.app-footer')?.textContent || '';
+  if (!footerText.includes('Ahmad Fajar Alfaravi')) {
+    appendLog('[COPYRIGHT WARNING] Project ini memiliki hak cipta ciptaan Ahmad Fajar Alfaravi. Modifikasi tanpa izin terdeteksi!', 'error');
+  }
+
   clearConsoleBtn.addEventListener('click', () => {
     terminalLogsEl.innerHTML = '';
     appendLog('[SYSTEM] Console logs cleared.', 'info');
