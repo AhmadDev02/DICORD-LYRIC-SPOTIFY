@@ -49,6 +49,9 @@ export default async function handler(req, res) {
     return;
   }
 
+  const cleanedTitle = cleanTrackTitle(title);
+  const searchQuery = `${cleanedTitle || title} ${artist}`.trim();
+
   // 1. Try Spotify Official Color-Lyrics API via Serverless Node.js
   if (trackId && spotifyToken) {
     try {
@@ -80,12 +83,43 @@ export default async function handler(req, res) {
           }
         }
       }
-    } catch (e) {
-      // Ignore Spotify internal API error and try LRCLIB
-    }
+    } catch (e) {}
   }
 
-  // 2. Try LRCLIB Exact Match
+  // 2. Try NetEase Cloud Music API
+  try {
+    const neteaseSearchUrl = `https://music.163.com/api/search/get/web?csrf_token=&hlpretag=&hlposttag=&s=${encodeURIComponent(searchQuery)}&type=1&offset=0&total=true&limit=3`;
+    const neteaseSearchRes = await fetch(neteaseSearchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
+    });
+
+    if (neteaseSearchRes.ok) {
+      const searchData = await neteaseSearchRes.json();
+      const songs = searchData.result?.songs;
+      if (Array.isArray(songs) && songs.length > 0) {
+        const songId = songs[0].id;
+        const lyricRes = await fetch(`https://music.163.com/api/song/lyric?os=pc&id=${songId}&lv=-1&kv=-1&tv=-1`, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+        });
+        if (lyricRes.ok) {
+          const lyricData = await lyricRes.json();
+          if (lyricData.lrc && lyricData.lrc.lyric) {
+            const parsed = parseLRC(lyricData.lrc.lyric);
+            if (parsed.length > 0) {
+              res.status(200).json({ source: 'netease', lines: parsed });
+              return;
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 3. Try LRCLIB Exact Match
   try {
     const params = new URLSearchParams({ track_name: title, artist_name: artist });
     let lrcRes = await fetch(`https://lrclib.net/api/get?${params.toString()}`);
@@ -97,8 +131,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // 3. Try Cleaned Title Match
-    const cleanedTitle = cleanTrackTitle(title);
+    // 4. Try Cleaned Title Match
     if (cleanedTitle && cleanedTitle !== title) {
       const cleanParams = new URLSearchParams({ track_name: cleanedTitle, artist_name: artist });
       lrcRes = await fetch(`https://lrclib.net/api/get?${cleanParams.toString()}`);
@@ -111,8 +144,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // 4. Try Fuzzy Search
-    const searchQuery = `${cleanedTitle || title} ${artist}`.trim();
+    // 5. Try LRCLIB Fuzzy Search
     const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(searchQuery)}`);
     if (searchRes.ok) {
       const searchData = await searchRes.json();

@@ -497,6 +497,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data && data.lines && Array.isArray(data.lines) && data.lines.length > 0) {
           if (data.source === 'spotify_official') {
             appendLog(`[SPOTIFY OFFICIAL LYRICS] Loaded ${data.lines.length} synced lyric lines directly from Spotify!`, 'success');
+          } else if (data.source === 'netease') {
+            appendLog(`[NETEASE LYRICS] Loaded ${data.lines.length} synced lyric lines from NetEase Cloud Music!`, 'success');
           } else {
             appendLog(`[LRCLIB] Loaded ${data.lines.length} synced lyric lines from LRCLIB database.`, 'lrclib');
           }
