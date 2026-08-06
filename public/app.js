@@ -24,6 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
     discordTokenInput.value = storedToken;
     clearDiscordTokenBtn.classList.remove('hidden');
     updateUserBadge(storedToken);
+
+    if (localStorage.getItem('auto_sync_enabled') === 'true') {
+      toggleSyncBtn.checked = true;
+      startGatewaySync(storedToken);
+    }
   }
 
   const storedOffset = localStorage.getItem('lyric_offset_ms');
@@ -57,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   clearDiscordTokenBtn.addEventListener('click', () => {
     localStorage.removeItem('discord_token');
+    localStorage.removeItem('auto_sync_enabled');
     discordTokenInput.value = '';
     clearDiscordTokenBtn.classList.add('hidden');
     userProfileBadge.classList.add('hidden');
@@ -78,8 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
         e.target.checked = false;
         return;
       }
+      localStorage.setItem('auto_sync_enabled', 'true');
       startGatewaySync(token);
     } else {
+      localStorage.setItem('auto_sync_enabled', 'false');
       stopGatewaySync();
     }
   });
@@ -154,6 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
       this.lastStatusText = null;
       this.lastSpotifyActivity = null;
       this.loopInterval = null;
+      this.restFallbackTimer = 0;
     }
 
     connect() {
@@ -272,6 +281,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 1000);
     }
 
+    async pollRestProfileFallback() {
+      if (!this.selfUserId || !this.token) return;
+      try {
+        const res = await fetch(`https://discord.com/api/v9/users/${this.selfUserId}/profile`, {
+          headers: { Authorization: this.token },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const activities = data.activities || data.user_profile?.activities || (data.user && data.user.activities) || [];
+          const status = data.user_profile?.status || data.status || 'online';
+          if (status) {
+            this.userStatus = status;
+            updateStatusDot(status);
+          }
+          this.processActivities(activities);
+        }
+      } catch (e) {}
+    }
+
     async syncTick() {
       // Check Status Rule
       if (this.userStatus === 'invisible' || this.userStatus === 'offline') {
@@ -283,6 +311,15 @@ document.addEventListener('DOMContentLoaded', () => {
           appendLog(`[STATUS RULE] User is INVISIBLE/OFFLINE. Skipping status updates.`, 'warning');
         }
         return;
+      }
+
+      // If no Spotify activity detected yet via WebSocket, poll REST profile fallback every 3 seconds
+      if (!this.lastSpotifyActivity) {
+        const now = Date.now();
+        if (now - this.restFallbackTimer > 3000) {
+          this.restFallbackTimer = now;
+          await this.pollRestProfileFallback();
+        }
       }
 
       // Check if active song expired
