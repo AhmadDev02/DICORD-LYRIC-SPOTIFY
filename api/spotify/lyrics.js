@@ -84,9 +84,10 @@ export default async function handler(req, res) {
   const shortTitle = titleWords.length > 2 ? titleWords.slice(0, 2).join(' ') : (cleanedTitle || title);
   const shortSearchQuery = `${shortTitle} ${cleanedArtist || artist}`.trim();
 
-  let cleanToken = spotifyToken ? spotifyToken.replace('Bearer ', '').trim() : '';
+  let userSpotifyToken = spotifyToken ? spotifyToken.replace('Bearer ', '').trim() : '';
 
-  // 0. If no user Spotify token, generate server Client Credentials token automatically
+  // 1. Try Spotify Official Color-Lyrics API using User Token or App Token
+  let cleanToken = userSpotifyToken;
   if (!cleanToken && process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET) {
     try {
       const credRes = await fetch('https://accounts.spotify.com/api/token', {
@@ -106,7 +107,6 @@ export default async function handler(req, res) {
     } catch (e) {}
   }
 
-  // 1. Try Spotify Official Color-Lyrics API
   if (cleanToken) {
     try {
       if (!trackId || trackId.includes('-') || trackId.length !== 22) {
@@ -135,6 +135,7 @@ export default async function handler(req, res) {
         if (spotifyRes.ok) {
           const data = await spotifyRes.json();
           if (data && data.lyrics && data.lyrics.lines) {
+            const isSynced = data.lyrics.syncType === 'LINE_SYNCED';
             const lines = [];
             for (const line of data.lyrics.lines) {
               if (line.words) {
@@ -145,6 +146,13 @@ export default async function handler(req, res) {
               }
             }
             if (lines.length > 0) {
+              const hasTimestamps = lines.some((l) => l.ms > 0);
+              if (!isSynced || !hasTimestamps) {
+                const plainText = lines.map((l) => l.text).join('\n');
+                const timedLines = convertPlainLyricsToTimed(plainText, durationMs);
+                res.status(200).json({ source: 'spotify_official_auto_timed', lines: timedLines });
+                return;
+              }
               res.status(200).json({ source: 'spotify_official', lines });
               return;
             }
