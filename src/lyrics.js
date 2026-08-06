@@ -2,6 +2,14 @@ const lyricsCache = new Map();
 
 const USER_AGENT = 'DiscordSpotifyLyricStatus/1.0 (https://github.com/ahmad02/BOT-DC-LYRIC-SPOTIFY)';
 
+function cleanTrackTitle(title) {
+  if (!title) return '';
+  return title
+    .replace(/[\(\[\{].*?[\)\]\}]/g, '')
+    .replace(/-.*$/, '')
+    .trim();
+}
+
 export async function fetchLyrics(track) {
   if (!track || !track.title) return null;
 
@@ -11,6 +19,7 @@ export async function fetchLyrics(track) {
   }
 
   try {
+    // 1. Try Exact Get Match
     const params = new URLSearchParams({
       track_name: track.title,
       artist_name: track.artist,
@@ -18,32 +27,59 @@ export async function fetchLyrics(track) {
     if (track.album) params.append('album_name', track.album);
     if (track.durationMs) params.append('duration', Math.round(track.durationMs / 1000).toString());
 
-    const url = `https://lrclib.net/api/get?${params.toString()}`;
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': USER_AGENT,
-      },
+    let res = await fetch(`https://lrclib.net/api/get?${params.toString()}`, {
+      headers: { 'User-Agent': USER_AGENT },
     });
 
-    if (res.status === 404) {
-      lyricsCache.set(cacheKey, null);
-      return null;
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.syncedLyrics) {
+        const parsed = parseLRC(data.syncedLyrics);
+        lyricsCache.set(cacheKey, parsed);
+        return parsed;
+      }
     }
 
-    if (!res.ok) {
-      console.warn(`[LRCLIB] Returned HTTP status ${res.status}`);
-      return null;
+    // 2. Try Cleaned Title Get Match
+    const cleaned = cleanTrackTitle(track.title);
+    if (cleaned && cleaned !== track.title) {
+      const cleanParams = new URLSearchParams({
+        track_name: cleaned,
+        artist_name: track.artist,
+      });
+      res = await fetch(`https://lrclib.net/api/get?${cleanParams.toString()}`, {
+        headers: { 'User-Agent': USER_AGENT },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.syncedLyrics) {
+          const parsed = parseLRC(data.syncedLyrics);
+          lyricsCache.set(cacheKey, parsed);
+          return parsed;
+        }
+      }
     }
 
-    const data = await res.json();
-    if (!data || !data.syncedLyrics) {
-      lyricsCache.set(cacheKey, null);
-      return null;
+    // 3. Fallback to Fuzzy Search Endpoint
+    const searchQuery = `${cleaned || track.title} ${track.artist}`.trim();
+    const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(searchQuery)}`, {
+      headers: { 'User-Agent': USER_AGENT },
+    });
+
+    if (searchRes.ok) {
+      const results = await searchRes.json();
+      if (Array.isArray(results) && results.length > 0) {
+        const matched = results.find((item) => item.syncedLyrics && item.syncedLyrics.trim().length > 0);
+        if (matched) {
+          const parsed = parseLRC(matched.syncedLyrics);
+          lyricsCache.set(cacheKey, parsed);
+          return parsed;
+        }
+      }
     }
 
-    const parsedLines = parseLRC(data.syncedLyrics);
-    lyricsCache.set(cacheKey, parsedLines);
-    return parsedLines;
+    lyricsCache.set(cacheKey, null);
+    return null;
   } catch (err) {
     console.error('[LRCLIB] Fetch error:', err.message);
     return null;
@@ -60,11 +96,9 @@ export function parseLRC(lrcText) {
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
-
     timeRegex.lastIndex = 0;
     let match;
     const timestamps = [];
-
     while ((match = timeRegex.exec(trimmed)) !== null) {
       const minutes = parseInt(match[1], 10);
       const seconds = parseInt(match[2], 10);
@@ -74,9 +108,7 @@ export function parseLRC(lrcText) {
       }
       timestamps.push(minutes * 60 * 1000 + seconds * 1000 + ms);
     }
-
     const lyricText = trimmed.replace(/\[\d{2}:\d{2}(?:\.\d{2,3})?\]/g, '').trim();
-
     for (const timeMs of timestamps) {
       result.push({ ms: timeMs, text: lyricText });
     }

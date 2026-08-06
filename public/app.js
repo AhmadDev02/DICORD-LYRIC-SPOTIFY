@@ -426,8 +426,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const offsetMs = parseInt(offsetInput.value || '0', 10);
       const activeLine = getActiveLyricLine(this.currentLyrics, progressMs, offsetMs);
 
-      const lyricText = activeLine ? activeLine.text : `🎵 ${track.title}`;
-      const formattedStatus = `🎵 | ${lyricText}`.substring(0, 128);
+      const formattedStatus = activeLine
+        ? `🎵 | ${activeLine.text}`.substring(0, 128)
+        : `🎵 ${track.title} - ${track.artist}`.substring(0, 128);
 
       liveLyricTextEl.textContent = formattedStatus;
 
@@ -478,8 +479,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function cleanTrackTitle(title) {
+    if (!title) return '';
+    return title
+      .replace(/[\(\[\{].*?[\)\]\}]/g, '')
+      .replace(/-.*$/, '')
+      .trim();
+  }
+
   async function fetchLyricsFromLRCLIB(track) {
     try {
+      // 1. Try Exact Match
       const params = new URLSearchParams({
         track_name: track.title,
         artist_name: track.artist,
@@ -487,13 +497,38 @@ document.addEventListener('DOMContentLoaded', () => {
       if (track.album) params.append('album_name', track.album);
       if (track.durationMs) params.append('duration', Math.round(track.durationMs / 1000).toString());
 
-      const res = await fetch(`https://lrclib.net/api/get?${params.toString()}`);
-      if (!res.ok) return null;
+      let res = await fetch(`https://lrclib.net/api/get?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.syncedLyrics) return parseLRC(data.syncedLyrics);
+      }
 
-      const data = await res.json();
-      if (!data || !data.syncedLyrics) return null;
+      // 2. Try Clean Title Match
+      const cleaned = cleanTrackTitle(track.title);
+      if (cleaned && cleaned !== track.title) {
+        const cleanParams = new URLSearchParams({
+          track_name: cleaned,
+          artist_name: track.artist,
+        });
+        res = await fetch(`https://lrclib.net/api/get?${cleanParams.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.syncedLyrics) return parseLRC(data.syncedLyrics);
+        }
+      }
 
-      return parseLRC(data.syncedLyrics);
+      // 3. Fallback to Fuzzy Search
+      const searchQuery = `${cleaned || track.title} ${track.artist}`.trim();
+      const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(searchQuery)}`);
+      if (searchRes.ok) {
+        const results = await searchRes.json();
+        if (Array.isArray(results) && results.length > 0) {
+          const matched = results.find((item) => item.syncedLyrics && item.syncedLyrics.trim().length > 0);
+          if (matched) return parseLRC(matched.syncedLyrics);
+        }
+      }
+
+      return null;
     } catch (e) {
       return null;
     }
