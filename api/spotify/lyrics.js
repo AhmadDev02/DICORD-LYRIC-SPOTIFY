@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const USER_AGENT = 'DiscordSpotifyLyricStatus/1.0 (https://github.com/AhmadDev02/DICORD-LYRIC-SPOTIFY)';
-const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 function cleanTrackTitle(title) {
   if (!title) return '';
@@ -68,16 +68,22 @@ function convertPlainLyricsToTimed(plainText, durationMs = 180000) {
 
 async function queryGenius(q, durationMs = 180000) {
   try {
-    const searchRes = await fetch(`https://genius.com/api/search/multi?q=${encodeURIComponent(q)}`, {
-      headers: { 'User-Agent': BROWSER_UA },
+    const searchRes = await fetch(`https://genius.com/api/search/song?q=${encodeURIComponent(q)}`, {
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': BROWSER_UA,
+      },
     });
     if (searchRes.ok) {
       const data = await searchRes.json();
-      const hits = data.response?.sections?.find((s) => s.type === 'song')?.hits;
+      const hits = data.response?.sections?.[0]?.hits;
       if (Array.isArray(hits) && hits.length > 0) {
         const songUrl = hits[0].result.url;
         const pageRes = await fetch(songUrl, {
-          headers: { 'User-Agent': BROWSER_UA },
+          headers: {
+            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'User-Agent': BROWSER_UA,
+          },
         });
         if (pageRes.ok) {
           const html = await pageRes.text();
