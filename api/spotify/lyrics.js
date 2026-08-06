@@ -5,7 +5,9 @@ function cleanTrackTitle(title) {
   if (!title) return '';
   return title
     .replace(/[\(\[\{].*?[\)\]\}]/g, '')
-    .replace(/-.*$/, '')
+    .replace(/[-–—].*$/, '')
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -30,8 +32,10 @@ function parseLRC(lrcText) {
       timestamps.push(minutes * 60 * 1000 + seconds * 1000 + ms);
     }
     const lyricText = trimmed.replace(/\[\d{2}:\d{2}(?:\.\d{2,3})?\]/g, '').trim();
-    for (const timeMs of timestamps) {
-      result.push({ ms: timeMs, text: lyricText });
+    if (lyricText) {
+      for (const timeMs of timestamps) {
+        result.push({ ms: timeMs, text: lyricText });
+      }
     }
   }
   result.sort((a, b) => a.ms - b.ms);
@@ -50,33 +54,13 @@ export default async function handler(req, res) {
   }
 
   const cleanedTitle = cleanTrackTitle(title);
-  const searchQuery = `${cleanedTitle || title} ${artist}`.trim();
+  const cleanedArtist = cleanTrackTitle(artist);
+  const searchQuery = `${cleanedTitle || title} ${cleanedArtist || artist}`.trim();
   let cleanToken = spotifyToken ? spotifyToken.replace('Bearer ', '').trim() : '';
 
-  // 0. If no user Spotify token, generate server Client Credentials token automatically
-  if (!cleanToken && process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET) {
-    try {
-      const credRes = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: 'Basic ' + Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64'),
-        },
-        body: new URLSearchParams({ grant_type: 'client_credentials' }).toString(),
-      });
-      if (credRes.ok) {
-        const credData = await credRes.json();
-        if (credData.access_token) {
-          cleanToken = credData.access_token;
-        }
-      }
-    } catch (e) {}
-  }
-
-  // 1. Try Spotify Official Color-Lyrics API
+  // 1. Try Spotify Official Color-Lyrics API (If user token or app token provided)
   if (cleanToken) {
     try {
-      // If trackId is missing or not a 22-char Spotify ID, resolve real ID via Spotify Search API
       if (!trackId || trackId.includes('-') || trackId.length !== 22) {
         const searchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery)}&type=track&limit=1`;
         const searchRes = await fetch(searchUrl, {
@@ -122,10 +106,10 @@ export default async function handler(req, res) {
     } catch (e) {}
   }
 
-  // 2. Try NetEase Cloud Music API with proper headers
+  // 2. Try NetEase Cloud Music API with Punctuation-Free Query
   try {
     const neteaseSearchUrl = `https://music.163.com/api/search/pc`;
-    const neteaseSearchRes = await fetch(neteaseSearchUrl, {
+    const neteaseRes = await fetch(neteaseSearchUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -136,28 +120,30 @@ export default async function handler(req, res) {
         s: searchQuery,
         type: '1',
         offset: '0',
-        limit: '3',
+        limit: '5',
       }).toString(),
     });
 
-    if (neteaseSearchRes.ok) {
-      const searchData = await neteaseSearchRes.json();
+    if (neteaseRes.ok) {
+      const searchData = await neteaseRes.json();
       const songs = searchData.result?.songs;
       if (Array.isArray(songs) && songs.length > 0) {
-        const songId = songs[0].id;
-        const lyricRes = await fetch(`https://music.163.com/api/song/lyric?os=pc&id=${songId}&lv=-1&kv=-1&tv=-1`, {
-          headers: {
-            Referer: 'https://music.163.com',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          },
-        });
-        if (lyricRes.ok) {
-          const lyricData = await lyricRes.json();
-          if (lyricData.lrc && lyricData.lrc.lyric) {
-            const parsed = parseLRC(lyricData.lrc.lyric);
-            if (parsed.length > 0) {
-              res.status(200).json({ source: 'netease', lines: parsed });
-              return;
+        for (const song of songs) {
+          const songId = song.id;
+          const lyricRes = await fetch(`https://music.163.com/api/song/lyric?os=pc&id=${songId}&lv=-1&kv=-1&tv=-1`, {
+            headers: {
+              Referer: 'https://music.163.com',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            },
+          });
+          if (lyricRes.ok) {
+            const lyricData = await lyricRes.json();
+            if (lyricData.lrc && lyricData.lrc.lyric) {
+              const parsed = parseLRC(lyricData.lrc.lyric);
+              if (parsed.length > 0) {
+                res.status(200).json({ source: 'netease', lines: parsed });
+                return;
+              }
             }
           }
         }
@@ -190,7 +176,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // 5. Try LRCLIB Fuzzy Search
+    // 5. Try LRCLIB Fuzzy Search with Clean Query
     const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(searchQuery)}`);
     if (searchRes.ok) {
       const searchData = await searchRes.json();
