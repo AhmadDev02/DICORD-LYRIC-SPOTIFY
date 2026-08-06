@@ -5,9 +5,10 @@ import { fetchLyrics, getActiveLyricLine } from '../src/lyrics.js';
 export default async function handler(req, res) {
   const token = req.query.token || req.headers.authorization;
   const offsetMs = parseInt(req.query.offset || '0', 10);
+  const logs = [];
 
   if (!token) {
-    res.status(400).json({ error: 'Discord token is required' });
+    res.status(400).json({ error: 'Discord token is required', logs: ['[ERROR] Discord token is missing.'] });
     return;
   }
 
@@ -20,11 +21,14 @@ export default async function handler(req, res) {
     // 1. Get Self User Info
     const meRes = await fetch('https://discord.com/api/v9/users/@me', { headers });
     if (!meRes.ok) {
-      res.status(meRes.status).json({ error: 'Invalid Discord Token' });
+      logs.push(`[ERROR] Invalid Discord Token (HTTP ${meRes.status}). Please check your token.`);
+      res.status(401).json({ error: 'Invalid Discord Token', logs });
       return;
     }
+
     const meData = await meRes.json();
     const userId = meData.id;
+    const username = meData.username;
 
     // 2. Fetch User Profile & Activities
     const profileRes = await fetch(`https://discord.com/api/v9/users/${userId}/profile`, { headers });
@@ -33,17 +37,21 @@ export default async function handler(req, res) {
 
     if (profileRes.ok) {
       const data = await profileRes.json();
-      activities = data.activities || data.user_profile?.activities || [];
+      activities = data.activities || data.user_profile?.activities || (data.user && data.user.activities) || [];
       userStatus = data.user_profile?.status || data.status || 'online';
     }
 
-    // 3. STATUS RULE: Allow online, idle, dnd. Disable if INVISIBLE/OFFLINE.
+    logs.push(`[DISCORD] Authenticated as ${username} (${userId}) [Status: ${userStatus}]`);
+
+    // 3. STATUS RULE: Allow online, idle, dnd. Disable if INVISIBLE/OFFLINE
     if (userStatus === 'invisible' || userStatus === 'offline') {
+      logs.push(`[STATUS RULE] User is INVISIBLE/OFFLINE. Skipping status updates.`);
       res.status(200).json({
         isPlaying: false,
         isInvisible: true,
         userStatus: userStatus,
         message: 'Status is Invisible. Sync disabled.',
+        logs,
       });
       return;
     }
@@ -58,6 +66,7 @@ export default async function handler(req, res) {
         isPlaying: false,
         userStatus: userStatus,
         track: null,
+        logs,
       });
       return;
     }
@@ -75,18 +84,23 @@ export default async function handler(req, res) {
       durationMs: durationMs,
     };
 
+    logs.push(`[SPOTIFY NOW PLAYING] ${track.title} - ${track.artist}`);
+
     // 5. Fetch Synced Lyrics from LRCLIB
     const lyrics = await fetchLyrics(track);
     let activeLine = null;
     if (lyrics && lyrics.length > 0) {
+      logs.push(`[LRCLIB] Found ${lyrics.length} synced lyric lines.`);
       activeLine = getActiveLyricLine(lyrics, progressMs, offsetMs);
+    } else {
+      logs.push(`[LRCLIB] No synced lyrics found for this track.`);
     }
 
     const lyricText = activeLine ? activeLine.text : `🎵 ${track.title}`;
     const formattedStatus = `🎵 | ${lyricText}`.substring(0, 128);
 
-    // 6. Update Discord Status via REST API (Only if online, idle, dnd)
-    await fetch('https://discord.com/api/v9/users/@me/settings', {
+    // 6. Update Discord Status via REST API
+    const patchRes = await fetch('https://discord.com/api/v9/users/@me/settings', {
       method: 'PATCH',
       headers: {
         ...headers,
@@ -97,13 +111,21 @@ export default async function handler(req, res) {
       }),
     });
 
+    if (patchRes.ok) {
+      logs.push(`[STATUS BALANCER] Updated status: "${formattedStatus}"`);
+    } else {
+      logs.push(`[ERROR] Failed to update Discord status (HTTP ${patchRes.status})`);
+    }
+
     res.status(200).json({
       isPlaying: true,
       userStatus: userStatus,
       track: track,
       currentLyricLine: formattedStatus,
+      logs,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logs.push(`[ERROR] ${err.message}`);
+    res.status(500).json({ error: err.message, logs });
   }
 }
