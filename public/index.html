@@ -69,46 +69,55 @@
         </div>
       </section>
 
-      <!-- Information & Lyrics Engine Notice Card -->
-      <section class="card notice-card">
-        <div class="notice-header">
-          <span class="notice-icon">💡</span>
-          <h3>Information & Lyrics Engine Provider Info</h3>
-        </div>
-        <div class="notice-grid">
-          <div class="notice-item">
-            <span class="notice-tag tag-free">🟢 FREE & PUBLIC (No Premium Required)</span>
-            <p><strong>LRCLIB, NetEase & Public Database:</strong> Automatically works 100% free for all tracks in public databases without needing Spotify Premium!</p>
-          </div>
-          <div class="notice-item">
-            <span class="notice-tag tag-premium">👑 DIRECT SPOTIFY SERVER LYRICS</span>
-            <p><strong>Direct Spotify Color-Lyrics:</strong> Direct extraction from Spotify internal servers (<code>spclient.wg.spotify.com</code>) requires an active <strong>Spotify Premium Subscription</strong> on your Spotify account.</p>
-          </div>
-          <div class="notice-item">
-            <span class="notice-tag tag-tip">💡 TIP FOR UNFOUND INDIE SONGS</span>
-            <p>If an indie song has no lyrics in public databases, simply contribute its <code>.lrc</code> file to <a href="https://lrclib.net" target="_blank" rel="noopener">LRCLIB.net</a> to make it sync instantly for everyone!</p>
-          </div>
-        </div>
-      </section>
+      <!-- Consolidated Information & Lyrics Guide Dropdown Accordion -->
+      <section class="card notice-card notice-accordion-card">
+        <details class="notice-accordion">
+          <summary class="notice-summary">
+            <div class="summary-left">
+              <span class="notice-icon">💡</span>
+              <h3>Panduan & Informasi Penyedia Lirik (Klik Untuk Membuka)</h3>
+            </div>
+            <span class="accordion-arrow">▼</span>
+          </summary>
 
-      <!-- Panduan Kecepatan & Jenis Lirik (User-Friendly Guide) -->
-      <section class="card notice-card sync-guide-card">
-        <div class="notice-header">
-          <span class="notice-icon">📢</span>
-          <h3>Panduan Jenis & Kecepatan Lirik (Wajib Dibaca)</h3>
-        </div>
-        <div class="sync-type-grid">
-          <div class="sync-type-box type-synced">
-            <div class="type-badge">⚡ 1. Lirik Presisi Real-Time (Synced LRC)</div>
-            <p><strong>Ciri-ciri:</strong> Lagu populer (Spotify Premium, NetEase, LRCLIB Synced).</p>
-            <p><strong>Cara Kerja:</strong> Lirik akan berganti <strong>100% pas & presisi per detik</strong> mengikuti kata demi kata yang dinyanyikan penyanyi.</p>
+          <div class="accordion-content">
+            <!-- Part A: Provider & Account Info -->
+            <div class="info-section">
+              <h4 class="section-subtitle">🔑 Informasi Akun & Penyedia Lirik</h4>
+              <div class="notice-grid">
+                <div class="notice-item">
+                  <span class="notice-tag tag-free">🟢 FREE & PUBLIC (Tanpa Premium)</span>
+                  <p><strong>LRCLIB, NetEase & Database Publik:</strong> Bekerja 100% gratis untuk semua lagu yang tersedia di database publik tanpa butuh Spotify Premium!</p>
+                </div>
+                <div class="notice-item">
+                  <span class="notice-tag tag-premium">👑 LIRIK RESMI SERVER SPOTIFY</span>
+                  <p><strong>Direct Spotify Color-Lyrics:</strong> Ekstraksi lirik resmi langsung dari server Spotify (<code>spclient.wg.spotify.com</code>) membutuhkan langganan <strong>Spotify Premium Aktif</strong>.</p>
+                </div>
+                <div class="notice-item">
+                  <span class="notice-tag tag-tip">💡 TIP UNTUK LAGU INDIE</span>
+                  <p>Jika lagu indie belum ada di database publik, Anda bisa meng-upload file <code>.lrc</code> di <a href="https://lrclib.net" target="_blank" rel="noopener">LRCLIB.net</a> agar langsung ter-sync untuk semua orang!</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Part B: Sync Speed Guide -->
+            <div class="info-section margin-top-section">
+              <h4 class="section-subtitle">⏱️ Cara Kerja Kecepatan & Jenis Lirik</h4>
+              <div class="sync-type-grid">
+                <div class="sync-type-box type-synced">
+                  <div class="type-badge">⚡ 1. Lirik Presisi Real-Time (Synced LRC)</div>
+                  <p><strong>Ciri-ciri:</strong> Lagu populer (Spotify Premium, NetEase, LRCLIB Synced).</p>
+                  <p><strong>Cara Kerja:</strong> Lirik akan berganti <strong>100% pas & presisi per detik</strong> mengikuti kata demi kata yang dinyanyikan penyanyi.</p>
+                </div>
+                <div class="sync-type-box type-paced">
+                  <div class="type-badge">⏱️ 2. Lirik Teks Otomatis (Auto-Paced Text)</div>
+                  <p><strong>Ciri-ciri:</strong> Lagu indie atau lagu dengan lirik teks biasa tanpa stempel waktu.</p>
+                  <p><strong>Cara Kerja:</strong> Sistem membagi baris lirik secara merata sepanjang durasi lagu. Lirik berganti secara otomatis per 3–5 detik dari awal sampai akhir lagu.</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="sync-type-box type-paced">
-            <div class="type-badge">⏱️ 2. Lirik Teks Otomatis (Auto-Paced Text)</div>
-            <p><strong>Ciri-ciri:</strong> Lagu indie atau lagu dengan lirik teks biasa tanpa stempel waktu.</p>
-            <p><strong>Cara Kerja:</strong> Sistem membagi baris lirik secara merata sepanjang durasi lagu. Lirik berganti secara otomatis per 3–5 detik dari awal sampai akhir lagu.</p>
-          </div>
-        </div>
+        </details>
       </section>
 
       <!-- Sync Status & Live Previewer Card -->

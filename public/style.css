@@ -477,32 +477,83 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 
 /* Information Notice Card */
-.notice-card {
+/* Information Notice Card & Accordion */
+.notice-accordion-card {
+  padding: 0 !important;
   border-left: 4px solid var(--accent-spotify);
-  background: rgba(16, 185, 129, 0.04);
+  background: rgba(16, 185, 129, 0.03);
+  overflow: hidden;
 }
 
-.notice-header {
+.notice-accordion {
+  width: 100%;
+}
+
+.notice-summary {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 1rem;
+  justify-content: space-between;
+  padding: 1.2rem 1.5rem;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 0.2s;
 }
 
-.notice-header h3 {
-  font-size: 1.05rem;
+.notice-summary::-webkit-details-marker {
+  display: none;
+}
+
+.notice-summary:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.summary-left {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.summary-left h3 {
+  font-size: 1rem;
   font-weight: 700;
   color: white;
 }
 
-.notice-icon {
-  font-size: 1.2rem;
+.accordion-arrow {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  transition: transform 0.3s ease;
+}
+
+.notice-accordion[open] .accordion-arrow {
+  transform: rotate(180deg);
+  color: var(--accent-spotify);
+}
+
+.accordion-content {
+  padding: 0 1.5rem 1.5rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.section-subtitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-top: 1.2rem;
+  margin-bottom: 0.8rem;
+}
+
+.margin-top-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
 }
 
 .notice-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.2rem;
+  gap: 1rem;
 }
 
 .notice-item {
@@ -558,16 +609,10 @@ input:checked + .slider:before { transform: translateX(20px); }
   border: 1px solid rgba(99, 102, 241, 0.4);
 }
 
-/* User-Friendly Sync Speed Guide */
-.sync-guide-card {
-  border-left: 4px solid #38bdf8;
-  background: rgba(56, 189, 248, 0.04);
-}
-
 .sync-type-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.2rem;
+  gap: 1rem;
 }
 
 .sync-type-box {
@@ -602,5 +647,6 @@ input:checked + .slider:before { transform: translateX(20px); }
 .sync-type-box p strong {
   color: white;
 }
+
 
 
