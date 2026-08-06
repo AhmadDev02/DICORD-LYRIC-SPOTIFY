@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 export default async function handler(req, res) {
   const code = req.query.code;
   if (!code) {
@@ -7,7 +10,9 @@ export default async function handler(req, res) {
 
   const clientId = process.env.SPOTIFY_CLIENT_ID || '';
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET || '';
-  const redirectUri = process.env.SPOTIFY_REDIRECT_URI || `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host}/api/spotify/callback`;
+  const host = req.headers.host || 'localhost:8888';
+  const protocol = req.headers['x-forwarded-proto'] || (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
+  const redirectUri = process.env.SPOTIFY_REDIRECT_URI || `${protocol}://${host}/api/spotify/callback`;
 
   try {
     const body = new URLSearchParams({
@@ -27,7 +32,6 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     if (data.access_token) {
-      // Fetch user profile to get email
       const userRes = await fetch('https://api.spotify.com/v1/me', {
         headers: { Authorization: `Bearer ${data.access_token}` },
       });

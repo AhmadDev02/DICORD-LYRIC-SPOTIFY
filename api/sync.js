@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import { fetchLyrics, getActiveLyricLine } from '../src/lyrics.js';
 
 export default async function handler(req, res) {
