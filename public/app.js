@@ -240,7 +240,9 @@ document.addEventListener('DOMContentLoaded', () => {
         (a) => a.name === 'Spotify' || a.type === 2 || (a.party && a.party.id && a.party.id.startsWith('spotify:'))
       );
 
-      this.lastSpotifyActivity = spotifyAct || null;
+      if (spotifyAct) {
+        this.lastSpotifyActivity = spotifyAct;
+      }
     }
 
     startSyncLoop() {
@@ -261,6 +263,13 @@ document.addEventListener('DOMContentLoaded', () => {
           appendLog(`[STATUS RULE] User is INVISIBLE/OFFLINE. Skipping status updates.`, 'warning');
         }
         return;
+      }
+
+      // Check if active song expired
+      if (this.lastSpotifyActivity && this.lastSpotifyActivity.timestamps && this.lastSpotifyActivity.timestamps.end) {
+        if (Date.now() > this.lastSpotifyActivity.timestamps.end + 5000) {
+          this.lastSpotifyActivity = null;
+        }
       }
 
       const spotifyAct = this.lastSpotifyActivity;
