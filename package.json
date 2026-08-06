@@ -1,0 +1,25 @@
+{
+  "name": "discord-spotify-lyric-status",
+  "version": "1.0.0",
+  "description": "Synchronize live Spotify lyrics to your Discord Custom Status with smart rate limiting and timing balance.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "discord",
+    "spotify",
+    "lyrics",
+    "status",
+    "lrclib",
+    "rich-presence"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  }
+}

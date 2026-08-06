@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord Spotify Lyric Status - Synchronize Music to Discord</title>
+  <meta name="description" content="Synchronize live Spotify playback lyrics directly to your Discord status in real-time with smart balance timing.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="glass-bg"></div>
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+
+  <div class="container">
+    <header class="app-header">
+      <div class="logo-box">
+        <span class="logo-icon">🎵</span>
+        <div class="logo-text">
+          <h1>LyricStatus<span class="badge-live">LIVE</span></h1>
+          <p>Discord Spotify Lyrics Sync Engine</p>
+        </div>
+      </div>
+      <div id="user-profile-badge" class="profile-badge hidden">
+        <span id="user-status-dot" class="status-dot dot-online"></span>
+        <span id="user-name-text">Not Connected</span>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <!-- Welcome & Setup Card -->
+      <section id="setup-section" class="card setup-card">
+        <div class="card-header">
+          <h2>🚀 Connect Your Accounts</h2>
+          <p>Easily connect your Discord Token & Spotify account to start live status lyrics.</p>
+        </div>
+
+        <div class="steps-grid">
+          <!-- Step 1: Discord Token -->
+          <div class="step-box">
+            <div class="step-number">1</div>
+            <div class="step-body">
+              <h3>Connect Discord Account</h3>
+              <p>Enter your Discord User Token to enable live status updates.</p>
+              <div class="input-group">
+                <input type="password" id="discord-token-input" placeholder="Paste your Discord User Token here..." autocomplete="off">
+                <button id="save-discord-token-btn" class="btn btn-secondary">Save Token</button>
+              </div>
+              <small class="help-text">🔒 Tokens are stored safely in your local browser session.</small>
+            </div>
+          </div>
+
+          <!-- Step 2: Spotify Connect -->
+          <div class="step-box">
+            <div class="step-number">2</div>
+            <div class="step-body">
+              <h3>Connect Spotify Account</h3>
+              <p>Connect your Spotify account (Works with Free & Premium!).</p>
+              <button id="spotify-login-btn" class="btn btn-spotify">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.02 8.52-.6 11.64 1.32.42.18.48.66.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141 C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.18-1.2-.18-1.38-.72-.18-.6.18-1.2.72-1.38C8.88 5.88 15.96 6.12 20.4 8.76c.54.3.72 1.02.42 1.56-.3.42-1.02.6-1.56.36z"/></svg>
+                Connect with Spotify
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sync Status & Live Previewer Card -->
+      <section id="preview-section" class="card preview-card">
+        <div class="card-header">
+          <div class="header-status">
+            <h2>🎶 Live Sync Ticker</h2>
+            <span id="sync-engine-badge" class="badge-status badge-stopped">STOPPED</span>
+          </div>
+          <p>Real-time playback monitoring and lyric preview.</p>
+        </div>
+
+        <div class="preview-display">
+          <div class="now-playing-box">
+            <div class="album-art" id="album-art-box">
+              <span id="album-emoji">🎧</span>
+            </div>
+            <div class="track-info">
+              <h3 id="track-title">No Track Playing</h3>
+              <p id="track-artist">Play music on Spotify to start lyrics</p>
+              <div class="status-rules-box">
+                <span class="rule-tag rule-online">🟢 Online</span>
+                <span class="rule-tag rule-idle">🌙 Idle</span>
+                <span class="rule-tag rule-dnd">⛔ DND</span>
+                <span class="rule-tag rule-invisible">⚪ Invisible (Auto-Paused)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="lyric-ticker-box">
+            <div class="ticker-label">CURRENT DISCORD STATUS:</div>
+            <div class="ticker-text" id="live-lyric-text">🎵 Waiting for Spotify playback...</div>
+          </div>
+        </div>
+
+        <!-- Controls & Options -->
+        <div class="options-bar">
+          <div class="toggle-control">
+            <label class="switch">
+              <input type="checkbox" id="toggle-sync-btn">
+              <span class="slider round"></span>
+            </label>
+            <span class="control-label">Enable Auto Status Sync</span>
+          </div>
+
+          <div class="offset-control">
+            <label for="offset-input">Timing Offset (ms):</label>
+            <input type="number" id="offset-input" value="0" step="100">
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Built with ❤️ • Universal Web Platform for Discord & Spotify</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
