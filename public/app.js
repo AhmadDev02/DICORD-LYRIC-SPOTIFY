@@ -117,7 +117,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function updateUserBadge(token) {
     try {
-      const res = await fetch(`/api/sync?token=${encodeURIComponent(token)}`);
+      const res = await fetch('/api/sync', {
+        headers: { Authorization: token },
+      });
       if (res.ok) {
         const data = await res.json();
         userProfileBadge.classList.remove('hidden');
@@ -336,7 +338,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // 2. Fallback to Vercel Serverless Sync API
       try {
         const offset = offsetInput.value || 0;
-        const res = await fetch(`/api/sync?token=${encodeURIComponent(this.token)}&offset=${offset}`);
+        const res = await fetch(`/api/sync?offset=${offset}`, {
+          headers: { Authorization: this.token },
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.userStatus) {
@@ -493,10 +497,11 @@ document.addEventListener('DOMContentLoaded', () => {
         title: track.title || '',
         artist: track.artist || '',
         durationMs: track.durationMs || 180000,
-        spotifyToken: spotifyToken,
       });
 
-      const res = await fetch(`/api/spotify/lyrics?${params.toString()}`);
+      const res = await fetch(`/api/spotify/lyrics?${params.toString()}`, {
+        headers: spotifyToken ? { Authorization: spotifyToken } : {},
+      });
       if (res.ok) {
         const data = await res.json();
         if (data && data.lines && Array.isArray(data.lines) && data.lines.length > 0) {
