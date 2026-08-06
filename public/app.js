@@ -109,14 +109,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function updateUserBadge(token) {
     try {
-      const res = await fetch('https://discord.com/api/v9/users/@me', {
-        headers: { Authorization: token },
-      });
+      const res = await fetch(`/api/sync?token=${encodeURIComponent(token)}`);
       if (res.ok) {
         const data = await res.json();
         userProfileBadge.classList.remove('hidden');
-        userNameText.textContent = `${data.username}`;
-        appendLog(`[DISCORD] Authenticated as ${data.username} (${data.id})`, 'success');
+        userNameText.textContent = `Connected User`;
       } else {
         appendLog(`[ERROR] Invalid Discord Token (HTTP ${res.status}). Please check your token.`, 'error');
       }
@@ -284,20 +281,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async pollRestProfileFallback() {
-      if (!this.selfUserId || !this.token) return;
+      if (!this.token) return;
       try {
-        const res = await fetch(`https://discord.com/api/v9/users/${this.selfUserId}/profile`, {
-          headers: { Authorization: this.token },
-        });
+        const offset = offsetInput.value || 0;
+        const res = await fetch(`/api/sync?token=${encodeURIComponent(this.token)}&offset=${offset}`);
         if (res.ok) {
           const data = await res.json();
-          const activities = data.activities || data.user_profile?.activities || (data.user && data.user.activities) || [];
-          const status = data.user_profile?.status || data.status || 'online';
-          if (status) {
-            this.userStatus = status;
-            updateStatusDot(status);
+          if (data.userStatus) {
+            this.userStatus = data.userStatus;
+            updateStatusDot(data.userStatus);
           }
-          this.processActivities(activities);
+          if (data.isPlaying && data.track) {
+            this.lastSpotifyActivity = {
+              name: 'Spotify',
+              type: 2,
+              details: data.track.title,
+              state: data.track.artist,
+              sync_id: data.track.id,
+              timestamps: { start: Date.now(), end: Date.now() + (data.track.durationMs || 180000) },
+              assets: { large_text: data.track.album || '' },
+            };
+          }
         }
       } catch (e) {}
     }
@@ -315,10 +319,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // If no Spotify activity detected yet via WebSocket, poll REST profile fallback every 3 seconds
+      // If no Spotify activity detected yet via WebSocket, poll Serverless REST sync fallback every 2.5 seconds
       if (!this.lastSpotifyActivity) {
         const now = Date.now();
-        if (now - this.restFallbackTimer > 3000) {
+        if (now - this.restFallbackTimer > 2500) {
           this.restFallbackTimer = now;
           await this.pollRestProfileFallback();
         }
