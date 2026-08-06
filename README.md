@@ -2,7 +2,7 @@
 
 A real-time Web & Node.js application that synchronizes your currently playing Spotify lyrics into your Discord Custom Status automatically, built with smart timing balance, status rules (Online/Idle/DND vs Invisible), and rate-limiting protection.
 
-Built by **Ahmad Fajar Alfaravi**
+Built by **AhmadDev02**
 
 ---
 
@@ -84,4 +84,4 @@ Untuk menjalankan bot ini di Web Dashboard maupun Local Terminal, Anda memerluka
 | `LYRIC_OFFSET_MS` | `0` | Delay/advance timing in ms (e.g. `-500` if lyrics appear late) |
 
 ---
-Built by **Ahmad Fajar Alfaravi**
+Built by **AhmadDev02**

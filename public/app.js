@@ -33,8 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Check Copyright Integrity
   const footerText = document.querySelector('.app-footer')?.textContent || '';
-  if (!footerText.includes('Ahmad Fajar Alfaravi')) {
-    appendLog('[COPYRIGHT WARNING] Project ini memiliki hak cipta ciptaan Ahmad Fajar Alfaravi. Modifikasi tanpa izin terdeteksi!', 'error');
+  if (!footerText.includes('AhmadDev02')) {
+    appendLog('[COPYRIGHT WARNING] Project ini memiliki hak cipta ciptaan AhmadDev02. Modifikasi tanpa izin terdeteksi!', 'error');
   }
 
   clearConsoleBtn.addEventListener('click', () => {
