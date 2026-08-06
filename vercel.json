@@ -8,6 +8,7 @@
   "routes": [
     { "src": "/api/spotify/login", "dest": "/api/spotify/login.js" },
     { "src": "/api/spotify/callback", "dest": "/api/spotify/callback.js" },
+    { "src": "/api/spotify/lyrics", "dest": "/api/spotify/lyrics.js" },
     { "src": "/api/sync", "dest": "/api/sync.js" },
     { "src": "/(.*)", "dest": "/public/$1" }
   ]
