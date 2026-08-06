@@ -18,17 +18,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let gatewayEngine = null;
 
-  // Load stored configurations
+  // Load stored configurations sequentially
   const storedToken = localStorage.getItem('discord_token');
   if (storedToken) {
     discordTokenInput.value = storedToken;
     clearDiscordTokenBtn.classList.remove('hidden');
-    updateUserBadge(storedToken);
 
-    if (localStorage.getItem('auto_sync_enabled') === 'true') {
-      toggleSyncBtn.checked = true;
-      startGatewaySync(storedToken);
-    }
+    (async () => {
+      await updateUserBadge(storedToken);
+      if (localStorage.getItem('auto_sync_enabled') === 'true') {
+        toggleSyncBtn.checked = true;
+        startGatewaySync(storedToken);
+      }
+    })();
   }
 
   const storedOffset = localStorage.getItem('lyric_offset_ms');
@@ -127,8 +129,6 @@ document.addEventListener('DOMContentLoaded', () => {
     syncEngineBadge.textContent = 'RUNNING';
     syncEngineBadge.className = 'badge-status badge-running';
 
-    appendLog('[ENGINE] Starting playback & lyrics sync loop...', 'info');
-
     if (gatewayEngine) {
       gatewayEngine.disconnect();
     }
@@ -183,8 +183,10 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       this.ws.onclose = (e) => {
-        appendLog(`[DISCORD] Gateway Connection Closed (code ${e.code}).`, 'warning');
-        this.cleanup();
+        if (this.ws) {
+          appendLog(`[DISCORD] Gateway Connection Closed (code ${e.code}).`, 'warning');
+          this.cleanup();
+        }
       };
 
       this.ws.onerror = (err) => {
@@ -411,6 +413,9 @@ document.addEventListener('DOMContentLoaded', () => {
     disconnect() {
       this.cleanup();
       if (this.ws) {
+        this.ws.onclose = null;
+        this.ws.onerror = null;
+        this.ws.onmessage = null;
         try {
           this.ws.close();
         } catch (e) {}
