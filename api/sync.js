@@ -47,6 +47,8 @@ export default async function handler(req, res) {
     if (userStatus === 'invisible' || userStatus === 'offline') {
       logs.push(`[STATUS RULE] User is INVISIBLE/OFFLINE. Skipping status updates.`);
       res.status(200).json({
+        username: username,
+        userId: userId,
         isPlaying: false,
         isInvisible: true,
         userStatus: userStatus,
@@ -63,6 +65,8 @@ export default async function handler(req, res) {
 
     if (!spotifyAct || !spotifyAct.details) {
       res.status(200).json({
+        username: username,
+        userId: userId,
         isPlaying: false,
         userStatus: userStatus,
         track: null,
@@ -118,6 +122,8 @@ export default async function handler(req, res) {
     }
 
     res.status(200).json({
+      username: username,
+      userId: userId,
       isPlaying: true,
       userStatus: userStatus,
       track: track,

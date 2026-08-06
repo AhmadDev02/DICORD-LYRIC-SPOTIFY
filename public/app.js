@@ -75,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     discordTokenInput.value = '';
     clearDiscordTokenBtn.classList.add('hidden');
     userProfileBadge.classList.add('hidden');
+    userNameText.textContent = 'Not Connected';
     stopGatewaySync();
     toggleSyncBtn.checked = false;
     appendLog('[DISCORD] Token removed from browser storage.', 'warning');
@@ -120,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (res.ok) {
         const data = await res.json();
         userProfileBadge.classList.remove('hidden');
-        userNameText.textContent = `Connected User`;
+        userNameText.textContent = data.username || 'Connected User';
       } else {
         appendLog(`[ERROR] Invalid Discord Token (HTTP ${res.status}). Please check your token.`, 'error');
       }
