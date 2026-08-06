@@ -20,12 +20,14 @@ function convertPlainLyricsToTimed(plainText, durationMs = 180000) {
     .filter((l) => l.length > 0 && !l.startsWith('[') && !l.endsWith(']') && !l.endsWith('Lyrics') && !l.includes('Contributors'));
 
   if (lines.length === 0) return [];
-  const timePerLine = Math.max(2500, Math.floor((durationMs - 5000) / lines.length));
+  const introDelay = Math.min(15000, Math.floor(durationMs * 0.08));
+  const availableTime = Math.max(10000, durationMs - introDelay - 5000);
+  const timePerLine = Math.max(2500, Math.floor(availableTime / lines.length));
   const result = [];
 
   for (let i = 0; i < lines.length; i++) {
     result.push({
-      ms: i * timePerLine,
+      ms: introDelay + i * timePerLine,
       text: lines[i],
     });
   }

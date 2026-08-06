@@ -344,13 +344,17 @@ document.addEventListener('DOMContentLoaded', () => {
             updateStatusDot(data.userStatus);
           }
           if (data.isPlaying && data.track) {
+            const sameTrack = this.lastSpotifyActivity && (this.lastSpotifyActivity.sync_id === data.track.id || this.lastSpotifyActivity.details === data.track.title);
+            const currentStart = sameTrack && this.lastSpotifyActivity.timestamps ? this.lastSpotifyActivity.timestamps.start : Date.now();
+            const currentEnd = currentStart + (data.track.durationMs || 180000);
+
             this.lastSpotifyActivity = {
               name: 'Spotify',
               type: 2,
               details: data.track.title,
               state: data.track.artist,
               sync_id: data.track.id,
-              timestamps: { start: Date.now(), end: Date.now() + (data.track.durationMs || 180000) },
+              timestamps: { start: currentStart, end: currentEnd },
               assets: { large_text: data.track.album || '' },
             };
           }
