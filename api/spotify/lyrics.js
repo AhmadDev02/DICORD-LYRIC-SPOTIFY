@@ -42,11 +42,33 @@ function parseLRC(lrcText) {
   return result;
 }
 
+function convertPlainLyricsToTimed(plainText, durationMs = 180000) {
+  if (!plainText) return [];
+  const lines = plainText
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && !l.startsWith('[') && !l.endsWith(']'));
+
+  if (lines.length === 0) return [];
+  const timePerLine = Math.max(2500, Math.floor((durationMs - 5000) / lines.length));
+  const result = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    result.push({
+      ms: i * timePerLine,
+      text: lines[i],
+    });
+  }
+
+  return result;
+}
+
 export default async function handler(req, res) {
   let trackId = req.query.trackId || '';
   const title = req.query.title || '';
   const artist = req.query.artist || '';
   const spotifyToken = req.query.spotifyToken || req.headers.authorization || '';
+  const durationMs = parseInt(req.query.durationMs || '180000', 10);
 
   if (!title) {
     res.status(400).json({ error: 'Title is required' });
@@ -58,7 +80,7 @@ export default async function handler(req, res) {
   const searchQuery = `${cleanedTitle || title} ${cleanedArtist || artist}`.trim();
   let cleanToken = spotifyToken ? spotifyToken.replace('Bearer ', '').trim() : '';
 
-  // 1. Try Spotify Official Color-Lyrics API (If user token or app token provided)
+  // 1. Try Spotify Official Color-Lyrics API
   if (cleanToken) {
     try {
       if (!trackId || trackId.includes('-') || trackId.length !== 22) {
@@ -106,7 +128,7 @@ export default async function handler(req, res) {
     } catch (e) {}
   }
 
-  // 2. Try NetEase Cloud Music API with Punctuation-Free Query
+  // 2. Try NetEase Cloud Music API
   try {
     const neteaseSearchUrl = `https://music.163.com/api/search/pc`;
     const neteaseRes = await fetch(neteaseSearchUrl, {
@@ -151,40 +173,28 @@ export default async function handler(req, res) {
     }
   } catch (e) {}
 
-  // 3. Try LRCLIB Exact Match
+  // 3. Try LRCLIB Exact & Fuzzy Search with PlainLyrics Fallback
   try {
-    const params = new URLSearchParams({ track_name: title, artist_name: artist });
-    let lrcRes = await fetch(`https://lrclib.net/api/get?${params.toString()}`);
-    if (lrcRes.ok) {
-      const lrcData = await lrcRes.json();
-      if (lrcData && lrcData.syncedLyrics) {
-        res.status(200).json({ source: 'lrclib', lines: parseLRC(lrcData.syncedLyrics) });
-        return;
-      }
-    }
-
-    // 4. Try Cleaned Title Match
-    if (cleanedTitle && cleanedTitle !== title) {
-      const cleanParams = new URLSearchParams({ track_name: cleanedTitle, artist_name: artist });
-      lrcRes = await fetch(`https://lrclib.net/api/get?${cleanParams.toString()}`);
-      if (lrcRes.ok) {
-        const lrcData = await lrcRes.json();
-        if (lrcData && lrcData.syncedLyrics) {
-          res.status(200).json({ source: 'lrclib', lines: parseLRC(lrcData.syncedLyrics) });
-          return;
-        }
-      }
-    }
-
-    // 5. Try LRCLIB Fuzzy Search with Clean Query
     const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(searchQuery)}`);
     if (searchRes.ok) {
       const searchData = await searchRes.json();
       if (Array.isArray(searchData) && searchData.length > 0) {
-        const matched = searchData.find((item) => item.syncedLyrics && item.syncedLyrics.trim().length > 0);
-        if (matched) {
-          res.status(200).json({ source: 'lrclib', lines: parseLRC(matched.syncedLyrics) });
+        // Priority 1: Synced Lyrics
+        const syncedMatched = searchData.find((item) => item.syncedLyrics && item.syncedLyrics.trim().length > 0);
+        if (syncedMatched) {
+          res.status(200).json({ source: 'lrclib_synced', lines: parseLRC(syncedMatched.syncedLyrics) });
           return;
+        }
+
+        // Priority 2: Plain Lyrics converted to Auto-Timed Lines
+        const plainMatched = searchData.find((item) => item.plainLyrics && item.plainLyrics.trim().length > 0);
+        if (plainMatched) {
+          const trackDuration = (plainMatched.duration ? plainMatched.duration * 1000 : 0) || durationMs;
+          const timedLines = convertPlainLyricsToTimed(plainMatched.plainLyrics, trackDuration);
+          if (timedLines.length > 0) {
+            res.status(200).json({ source: 'lrclib_plain_auto_timed', lines: timedLines });
+            return;
+          }
         }
       }
     }

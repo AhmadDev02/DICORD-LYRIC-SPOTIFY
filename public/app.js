@@ -488,6 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
         trackId: track.id || '',
         title: track.title || '',
         artist: track.artist || '',
+        durationMs: track.durationMs || 180000,
         spotifyToken: spotifyToken,
       });
 
@@ -499,6 +500,8 @@ document.addEventListener('DOMContentLoaded', () => {
             appendLog(`[SPOTIFY OFFICIAL LYRICS] Loaded ${data.lines.length} synced lyric lines directly from Spotify!`, 'success');
           } else if (data.source === 'netease') {
             appendLog(`[NETEASE LYRICS] Loaded ${data.lines.length} synced lyric lines from NetEase Cloud Music!`, 'success');
+          } else if (data.source === 'lrclib_plain_auto_timed') {
+            appendLog(`[LRCLIB LYRICS ENGINE] Loaded ${data.lines.length} lyric lines (Auto-Paced Sync Engine active)!`, 'success');
           } else {
             appendLog(`[LRCLIB] Loaded ${data.lines.length} synced lyric lines from LRCLIB database.`, 'lrclib');
           }
