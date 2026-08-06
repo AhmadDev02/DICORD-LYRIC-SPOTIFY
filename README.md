@@ -1,17 +1,22 @@
 # 🎵 Discord Spotify Lyric Status Engine
 
-A real-time Node.js application that synchronizes your currently playing Spotify lyrics into your Discord Custom Status automatically, built with smart timing balance and rate-limiting protection.
+A real-time Web & Node.js application that synchronizes your currently playing Spotify lyrics into your Discord Custom Status automatically, built with smart timing balance, status rules (Online/Idle/DND vs Invisible), and rate-limiting protection.
+
+Built by **Ahmad Fajar Alfaravi**
 
 ---
 
 ## 🌟 Features
 
 - **⚡ Real-time Lyric Sync**: Fetch synchronized LRC lyrics automatically from [LRCLIB](https://lrclib.net/).
+- **🌐 Universal Web Platform**: Live Web Dashboard for Vercel deployment with real-time Console Logger.
+- **🛡️ Status Rules**:
+  - 🟢 **Online**, 🌙 **Idle**, ⛔ **Do Not Disturb (DND)**: Lyric status updates active.
+  - ⚪ **Invisible / Offline**: Status updates automatically PAUSED to keep you hidden.
 - **⚖️ Smart Balance Engine**:
   - **Rate Limit Balancer**: Prevents Discord API rate-limiting by throttling status updates and updating status only on lyric changes.
   - **Latency & Offset Adjuster**: Easily adjust lyric delay (`LYRIC_OFFSET_MS`) to match your exact audio sync.
-- **🔄 Auto Refresh & Reconnect**: Handles Spotify OAuth token refresh and Discord Gateway WebSocket auto-reconnections.
-- **🎨 Fallback Status Options**: Shows song title/artist when lyrics aren't found or when music is paused.
+- **🔄 Auto Reconnect**: Real-time Browser Native Discord Gateway WebSocket Engine.
 
 ---
 
@@ -22,69 +27,49 @@ A real-time Node.js application that synchronizes your currently playing Spotify
 
 ---
 
-## 🚀 Setup & Installation Guide (Panduan Setting)
+## 🔑 Cara Mendapatkan Discord User Token (How to Get Discord User Token)
 
-### 1. Requirements
-- **Node.js**: v18.0.0 or higher.
-- A **Spotify** account (Free or Premium).
-- A **Discord** account.
+Untuk menjalankan bot ini di Web Dashboard maupun Local Terminal, Anda memerlukan **Discord User Token**. Ikuti petunjuk bergambar/langkah mudah berikut:
 
-### 2. Install Dependencies
-```bash
-npm install
-```
+### Langkah 1: Buka Discord di Browser
+1. Buka Google Chrome / Brave / Edge / Safari di Komputer/Mac Anda.
+2. Buka dan login ke [Discord Web App](https://discord.com/app).
 
-### 3. Get Spotify Developer Credentials
-1. Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
-2. Click **Create an App** (or edit existing app settings).
-3. Set **App Name** (e.g. `DiscordLyricStatus`).
-4. Under **Redirect URIs**, type: `http://127.0.0.1:8888/callback`
-5. **Penting:** Klik tombol **Add** (warna biru di sebelah kanan kolom input) agar URI masuk ke daftar.
-6. Beri centang pada opsi **Web API** di bagian *"Which API/SDKs are you planning to use?"*.
-7. Klik tombol **Save** di bagian bawah.
-8. Copy **Client ID** dan **Client Secret** (klik *View client secret*).
+### Langkah 2: Buka Developer Tools (Inspeksi Elemen)
+1. Tekan tombol pintas keyboard:
+   - **Mac**: `Cmd + Option + I` (atau `F12`)
+   - **Windows**: `Ctrl + Shift + I` (atau `F12`)
+2. Jendela **Developer Tools** akan terbuka di sebelah kanan atau bawah layar.
 
-### 4. Get Your Discord User Token
-1. Open Discord in your Web Browser (or Discord Desktop App).
-2. Press `Ctrl + Shift + I` (or `Cmd + Option + I` on Mac) to open Developer Tools.
-3. Select the **Network** tab.
-4. Filter/search for `api` or `/users/@me`.
-5. Send any message or switch channels in Discord.
-6. Click on a request (e.g. `@me`) and find **`Authorization`** under **Request Headers**.
-7. Copy the token value (Do NOT share this token with anyone!).
+### Langkah 3: Masuk ke Tab Network
+1. Di panel bagian atas Developer Tools, klik tab **`Network`** (letaknya di antara *Sources* dan *Performance*).
+2. Jika daftar di bawahnya masih kosong, tekan **`Cmd + R`** (Mac) atau **`Ctrl + R`** (Windows) untuk memuat ulang (*refresh*) halaman Discord.
 
-### 5. Configure `.env`
-Copy `.env.example` to `.env`:
-```bash
-cp .env.example .env
-```
-Fill in `.env`:
-```env
-DISCORD_TOKEN=your_discord_user_token_here
-SPOTIFY_CLIENT_ID=your_spotify_client_id_here
-SPOTIFY_CLIENT_SECRET=your_spotify_client_secret_here
-SPOTIFY_PORT=8888
-STATUS_PREFIX=🎵 | 
-LYRIC_OFFSET_MS=0
-MIN_UPDATE_INTERVAL_MS=1500
-SHOW_TRACK_IF_NO_LYRICS=true
-CLEAR_STATUS_ON_PAUSE=false
-```
+### Langkah 4: Cari Request `@me`
+1. Di kolom pencarian filter tab Network (di bawah tulisan *Network*), ketik: `@me`
+2. Di tabel daftar nama sebelah kiri (kolom **Name**), klik item bertuliskan **`{} @me`** (atau item lain berikon kurung kurawal `{}` seperti `credentials` / `entitlements`).
+
+### Langkah 5: Salin Nilai `authorization`
+1. Di panel sebelah kanan, klik tab **`Headers`**.
+2. Scroll ke bawah sampai menemukan judul bagian **`▼ Request Headers`**.
+3. Cari baris bertuliskan **`authorization:`**.
+4. Salin (copy) kode string panjang di sampingnya (misal: `NzEyODg4MjcxMTM0MzkyMzYy.G...`).
+5. Tempel (paste) token tersebut di kolom **Connect Discord Account** di Web Dashboard Anda!
+
+> **⚠️ PENTING:** Token ini adalah kunci masuk ke akun Discord Anda. Jaga kerahasiannya dan jangan pernah membagikan token ini kepada orang lain!
 
 ---
 
-## 🏃 Running the Application
+## 🚀 Deployment Guide (Vercel)
 
-Start the engine:
-```bash
-npm start
-```
-
-1. On **first launch**, the terminal will prompt you to open:
-   `http://localhost:8888/login`
-2. Log in with your Spotify account and approve permissions.
-3. Tokens will be saved locally in `tokens.json`.
-4. Play a song on Spotify and watch your Discord status update live! 🎧
+1. Push repository ini ke akun GitHub Anda.
+2. Buka [Vercel Dashboard](https://vercel.com/dashboard) -> **Add New Project**.
+3. Di bagian **Environment Variables**, tambahkan:
+   - `SPOTIFY_CLIENT_ID`: Client ID dari Spotify Developer Dashboard
+   - `SPOTIFY_CLIENT_SECRET`: Client Secret dari Spotify Developer Dashboard
+   - `SPOTIFY_REDIRECT_URI`: `https://NAMA-PROJECT.vercel.app/api/spotify/callback`
+4. Di [Spotify Developer Dashboard](https://developer.spotify.com/dashboard), tambahkan Redirect URI di atas, klik **Add** lalu **Save**.
+5. Klik **Deploy**!
 
 ---
 
@@ -97,6 +82,6 @@ npm start
 | `SPOTIFY_CLIENT_SECRET` | *Required* | Spotify App Client Secret |
 | `STATUS_PREFIX` | `🎵 \| ` | Text/emoji prefix before lyric text |
 | `LYRIC_OFFSET_MS` | `0` | Delay/advance timing in ms (e.g. `-500` if lyrics appear late) |
-| `MIN_UPDATE_INTERVAL_MS`| `1500` | Minimum delay (ms) between Discord status updates (Rate limit balancer) |
-| `SHOW_TRACK_IF_NO_LYRICS`| `true` | Show song title if LRCLIB doesn't have synced lyrics |
-| `CLEAR_STATUS_ON_PAUSE` | `false` | Clear status when Spotify is paused (or show `⏸️ Track`) |
+
+---
+Built by **Ahmad Fajar Alfaravi**
