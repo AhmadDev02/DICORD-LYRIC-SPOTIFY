@@ -70,8 +70,9 @@ export default async function handler(req, res) {
             <button onclick="finishAuth()" class="btn">Return to Dashboard</button>
           </div>
           <script>
+            sessionStorage.setItem('spotify_access_token', '${data.access_token}');
             localStorage.setItem('spotify_access_token', '${data.access_token}');
-            ${data.refresh_token ? `localStorage.setItem('spotify_refresh_token', '${data.refresh_token}');` : ''}
+            ${data.refresh_token ? `sessionStorage.setItem('spotify_refresh_token', '${data.refresh_token}'); localStorage.setItem('spotify_refresh_token', '${data.refresh_token}');` : ''}
             function finishAuth() {
               window.location.href = '/?spotify_connected=1';
             }

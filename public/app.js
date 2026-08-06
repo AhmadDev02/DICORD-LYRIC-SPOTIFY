@@ -25,22 +25,36 @@ document.addEventListener('DOMContentLoaded', () => {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
+  function getSecureToken(key) {
+    return sessionStorage.getItem(key) || localStorage.getItem(key) || '';
+  }
+
+  function setSecureToken(key, value) {
+    sessionStorage.setItem(key, value);
+    localStorage.setItem(key, value);
+  }
+
+  function removeSecureToken(key) {
+    sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
+  }
+
   // Load stored configurations sequentially
-  const storedToken = localStorage.getItem('discord_token');
+  const storedToken = getSecureToken('discord_token');
   if (storedToken) {
     discordTokenInput.value = storedToken;
     clearDiscordTokenBtn.classList.remove('hidden');
 
     (async () => {
       await updateUserBadge(storedToken);
-      if (localStorage.getItem('auto_sync_enabled') === 'true') {
+      if (getSecureToken('auto_sync_enabled') === 'true') {
         toggleSyncBtn.checked = true;
         startGatewaySync(storedToken);
       }
     })();
   }
 
-  const storedOffset = localStorage.getItem('lyric_offset_ms');
+  const storedOffset = getSecureToken('lyric_offset_ms');
   if (storedOffset) {
     offsetInput.value = storedOffset;
   }
@@ -62,23 +76,23 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Please enter a valid Discord User Token.');
       return;
     }
-    localStorage.setItem('discord_token', token);
+    setSecureToken('discord_token', token);
     clearDiscordTokenBtn.classList.remove('hidden');
-    appendLog('[DISCORD] Token saved to local browser storage.', 'success');
+    appendLog('[DISCORD] Token saved securely in browser session.', 'success');
     await updateUserBadge(token);
     alert('Discord Token saved successfully!');
   });
 
   clearDiscordTokenBtn.addEventListener('click', () => {
-    localStorage.removeItem('discord_token');
-    localStorage.removeItem('auto_sync_enabled');
+    removeSecureToken('discord_token');
+    removeSecureToken('auto_sync_enabled');
     discordTokenInput.value = '';
     clearDiscordTokenBtn.classList.add('hidden');
     userProfileBadge.classList.add('hidden');
     userNameText.textContent = 'Not Connected';
     stopGatewaySync();
     toggleSyncBtn.checked = false;
-    appendLog('[DISCORD] Token removed from browser storage.', 'warning');
+    appendLog('[DISCORD] Token removed completely from browser storage.', 'warning');
     alert('Discord Token cleared!');
   });
 
@@ -88,22 +102,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   toggleSyncBtn.addEventListener('change', (e) => {
     if (e.target.checked) {
-      const token = localStorage.getItem('discord_token');
+      const token = getSecureToken('discord_token');
       if (!token) {
         alert('Please save your Discord Token first before enabling sync!');
         e.target.checked = false;
         return;
       }
-      localStorage.setItem('auto_sync_enabled', 'true');
+      setSecureToken('auto_sync_enabled', 'true');
       startGatewaySync(token);
     } else {
-      localStorage.setItem('auto_sync_enabled', 'false');
+      setSecureToken('auto_sync_enabled', 'false');
       stopGatewaySync();
     }
   });
 
   offsetInput.addEventListener('change', (e) => {
-    localStorage.setItem('lyric_offset_ms', e.target.value);
+    setSecureToken('lyric_offset_ms', e.target.value);
     appendLog(`[CONFIG] Lyric offset updated to ${e.target.value} ms`, 'info');
   });
 
@@ -291,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async pollSpotifyDirectAPI() {
-      const spotifyToken = localStorage.getItem('spotify_access_token');
+      const spotifyToken = getSecureToken('spotify_access_token');
       if (!spotifyToken) return false;
 
       try {
@@ -300,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (res.status === 401) {
-          localStorage.removeItem('spotify_access_token');
+          removeSecureToken('spotify_access_token');
           return false;
         }
 
@@ -489,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function getLyricsForTrack(track) {
     if (!track || !track.title) return null;
-    const spotifyToken = localStorage.getItem('spotify_access_token') || '';
+    const spotifyToken = getSecureToken('spotify_access_token');
 
     try {
       const params = new URLSearchParams({
