@@ -12,24 +12,32 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Fetch Discord Profile & Activities
-    const profileRes = await fetch('https://discord.com/api/v9/users/@me/profile', {
-      headers: {
-        Authorization: token,
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-    });
+    const headers = {
+      Authorization: token,
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    };
 
-    if (!profileRes.ok) {
-      res.status(profileRes.status).json({ error: 'Invalid Discord Token or Rate Limited' });
+    // 1. Get Self User Info
+    const meRes = await fetch('https://discord.com/api/v9/users/@me', { headers });
+    if (!meRes.ok) {
+      res.status(meRes.status).json({ error: 'Invalid Discord Token' });
       return;
     }
+    const meData = await meRes.json();
+    const userId = meData.id;
 
-    const data = await profileRes.json();
-    const activities = data.user_profile?.activities || data.activities || [];
-    const userStatus = data.user_profile?.status || data.status || 'online';
+    // 2. Fetch User Profile & Activities
+    const profileRes = await fetch(`https://discord.com/api/v9/users/${userId}/profile`, { headers });
+    let activities = [];
+    let userStatus = 'online';
 
-    // 2. STATUS RULE: Allow online, idle, dnd. Disable if INVISIBLE/OFFLINE.
+    if (profileRes.ok) {
+      const data = await profileRes.json();
+      activities = data.activities || data.user_profile?.activities || [];
+      userStatus = data.user_profile?.status || data.status || 'online';
+    }
+
+    // 3. STATUS RULE: Allow online, idle, dnd. Disable if INVISIBLE/OFFLINE.
     if (userStatus === 'invisible' || userStatus === 'offline') {
       res.status(200).json({
         isPlaying: false,
@@ -40,7 +48,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    // 3. Find Spotify Activity
+    // 4. Find Spotify Activity
     const spotifyAct = activities.find(
       (a) => a.name === 'Spotify' || a.type === 2 || (a.party && a.party.id && a.party.id.startsWith('spotify:'))
     );
@@ -67,7 +75,7 @@ export default async function handler(req, res) {
       durationMs: durationMs,
     };
 
-    // 4. Fetch Synced Lyrics from LRCLIB
+    // 5. Fetch Synced Lyrics from LRCLIB
     const lyrics = await fetchLyrics(track);
     let activeLine = null;
     if (lyrics && lyrics.length > 0) {
@@ -77,13 +85,12 @@ export default async function handler(req, res) {
     const lyricText = activeLine ? activeLine.text : `🎵 ${track.title}`;
     const formattedStatus = `🎵 | ${lyricText}`.substring(0, 128);
 
-    // 5. Update Discord Status via REST API (Only if online, idle, dnd)
+    // 6. Update Discord Status via REST API (Only if online, idle, dnd)
     await fetch('https://discord.com/api/v9/users/@me/settings', {
       method: 'PATCH',
       headers: {
-        Authorization: token,
+        ...headers,
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       },
       body: JSON.stringify({
         custom_status: { text: formattedStatus },
