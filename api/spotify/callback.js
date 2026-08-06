@@ -32,10 +32,18 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     if (data.access_token) {
-      const userRes = await fetch('https://api.spotify.com/v1/me', {
-        headers: { Authorization: `Bearer ${data.access_token}` },
-      });
-      const userData = await userRes.json();
+      let displayName = 'Spotify User';
+      try {
+        const userRes = await fetch('https://api.spotify.com/v1/me', {
+          headers: { Authorization: `Bearer ${data.access_token}` },
+        });
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          displayName = userData.display_name || userData.email || displayName;
+        }
+      } catch (e) {
+        // Ignore user profile fetch error on free accounts
+      }
 
       res.setHeader('Content-Type', 'text/html');
       res.send(`
@@ -43,18 +51,23 @@ export default async function handler(req, res) {
         <html>
         <head>
           <title>Spotify Connected</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
-            body { font-family: sans-serif; background: #0a0c14; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; }
-            .card { background: rgba(255,255,255,0.05); padding: 2rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
-            h1 { color: #1ed760; }
-            a { color: #5865f2; text-decoration: none; font-weight: bold; }
+            body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0c14; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+            .card { background: rgba(255,255,255,0.05); backdrop-filter: blur(16px); padding: 2.5rem; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+            .icon { font-size: 3.5rem; margin-bottom: 1rem; }
+            h1 { color: #1ed760; font-size: 1.6rem; margin-bottom: 0.5rem; }
+            p { color: #9ca3af; font-size: 0.95rem; margin-bottom: 1.8rem; }
+            .btn { background: #5865f2; color: white; padding: 0.75rem 1.5rem; border-radius: 12px; text-decoration: none; font-weight: bold; display: inline-block; transition: transform 0.15s; }
+            .btn:hover { transform: translateY(-2px); }
           </style>
         </head>
         <body>
           <div class="card">
-            <h1>Spotify Account Connected!</h1>
-            <p>Welcome, <strong>${userData.display_name || userData.email || 'Spotify User'}</strong>!</p>
-            <p><a href="/">Click here to return to Dashboard</a></p>
+            <div class="icon">🎉</div>
+            <h1>Spotify Connected!</h1>
+            <p>Welcome, <strong>${displayName}</strong>! Your Spotify account has been authorized.</p>
+            <a href="/" class="btn">Return to Dashboard</a>
           </div>
         </body>
         </html>
