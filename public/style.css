@@ -475,3 +475,86 @@ input:checked + .slider:before { transform: translateX(20px); }
   font-size: 0.8rem;
   color: var(--text-muted);
 }
+
+/* Information Notice Card */
+.notice-card {
+  border-left: 4px solid var(--accent-spotify);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.notice-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.notice-header h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: white;
+}
+
+.notice-icon {
+  font-size: 1.2rem;
+}
+
+.notice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.2rem;
+}
+
+.notice-item {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--panel-border);
+  padding: 1rem;
+  border-radius: 12px;
+}
+
+.notice-item p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 0.5rem;
+}
+
+.notice-item code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  color: #38bdf8;
+  font-size: 0.75rem;
+}
+
+.notice-item a {
+  color: var(--accent-spotify);
+  text-decoration: underline;
+}
+
+.notice-tag {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.tag-free {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.tag-premium {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.tag-tip {
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
