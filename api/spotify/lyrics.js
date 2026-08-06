@@ -39,7 +39,7 @@ function parseLRC(lrcText) {
 }
 
 export default async function handler(req, res) {
-  const trackId = req.query.trackId || '';
+  let trackId = req.query.trackId || '';
   const title = req.query.title || '';
   const artist = req.query.artist || '';
   const spotifyToken = req.query.spotifyToken || req.headers.authorization || '';
@@ -51,48 +51,73 @@ export default async function handler(req, res) {
 
   const cleanedTitle = cleanTrackTitle(title);
   const searchQuery = `${cleanedTitle || title} ${artist}`.trim();
+  const cleanToken = spotifyToken ? spotifyToken.replace('Bearer ', '').trim() : '';
 
-  // 1. Try Spotify Official Color-Lyrics API via Serverless Node.js
-  if (trackId && spotifyToken) {
+  // 1. Try Spotify Official Color-Lyrics API
+  if (cleanToken) {
     try {
-      const cleanToken = spotifyToken.replace('Bearer ', '');
-      const spotifyUrl = `https://spclient.wg.spotify.com/color-lyrics/v2/user/me/track/${trackId}?format=json&vocalRemoval=false`;
-      const spotifyRes = await fetch(spotifyUrl, {
-        headers: {
-          Authorization: `Bearer ${cleanToken}`,
-          'App-Platform': 'WebPlayer',
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        },
-      });
-
-      if (spotifyRes.ok) {
-        const data = await spotifyRes.json();
-        if (data && data.lyrics && data.lyrics.lines) {
-          const lines = [];
-          for (const line of data.lyrics.lines) {
-            if (line.words) {
-              lines.push({
-                ms: parseInt(line.startTimeMs || '0', 10),
-                text: line.words.trim(),
-              });
-            }
+      // If trackId is not a valid 22-char Spotify ID, search Spotify Web API to resolve the real trackId
+      if (!trackId || trackId.includes('-') || trackId.length !== 22) {
+        const searchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery)}&type=track&limit=1`;
+        const searchRes = await fetch(searchUrl, {
+          headers: { Authorization: `Bearer ${cleanToken}` },
+        });
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          if (searchData?.tracks?.items?.length > 0) {
+            trackId = searchData.tracks.items[0].id;
           }
-          if (lines.length > 0) {
-            res.status(200).json({ source: 'spotify_official', lines });
-            return;
+        }
+      }
+
+      if (trackId && !trackId.includes('-')) {
+        const spotifyUrl = `https://spclient.wg.spotify.com/color-lyrics/v2/user/me/track/${trackId}?format=json&vocalRemoval=false`;
+        const spotifyRes = await fetch(spotifyUrl, {
+          headers: {
+            Authorization: `Bearer ${cleanToken}`,
+            'App-Platform': 'WebPlayer',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+        });
+
+        if (spotifyRes.ok) {
+          const data = await spotifyRes.json();
+          if (data && data.lyrics && data.lyrics.lines) {
+            const lines = [];
+            for (const line of data.lyrics.lines) {
+              if (line.words) {
+                lines.push({
+                  ms: parseInt(line.startTimeMs || '0', 10),
+                  text: line.words.trim(),
+                });
+              }
+            }
+            if (lines.length > 0) {
+              res.status(200).json({ source: 'spotify_official', lines });
+              return;
+            }
           }
         }
       }
     } catch (e) {}
   }
 
-  // 2. Try NetEase Cloud Music API
+  // 2. Try NetEase Cloud Music API with proper headers
   try {
-    const neteaseSearchUrl = `https://music.163.com/api/search/get/web?csrf_token=&hlpretag=&hlposttag=&s=${encodeURIComponent(searchQuery)}&type=1&offset=0&total=true&limit=3`;
+    const neteaseSearchUrl = `https://music.163.com/api/search/pc`;
     const neteaseSearchRes = await fetch(neteaseSearchUrl, {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Referer: 'https://music.163.com',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       },
+      body: new URLSearchParams({
+        s: searchQuery,
+        type: '1',
+        offset: '0',
+        limit: '3',
+      }).toString(),
     });
 
     if (neteaseSearchRes.ok) {
@@ -102,6 +127,7 @@ export default async function handler(req, res) {
         const songId = songs[0].id;
         const lyricRes = await fetch(`https://music.163.com/api/song/lyric?os=pc&id=${songId}&lv=-1&kv=-1&tv=-1`, {
           headers: {
+            Referer: 'https://music.163.com',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           },
         });
