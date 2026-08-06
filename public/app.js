@@ -479,48 +479,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  async function fetchSpotifyOfficialLyrics(trackId) {
-    const spotifyToken = localStorage.getItem('spotify_access_token');
-    if (!spotifyToken || !trackId) return null;
+  async function getLyricsForTrack(track) {
+    if (!track || !track.title) return null;
+    const spotifyToken = localStorage.getItem('spotify_access_token') || '';
 
     try {
-      const url = `https://spclient.wg.spotify.com/color-lyrics/v2/user/me/track/${trackId}?format=json&vocalRemoval=false`;
-      const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${spotifyToken}`,
-          'App-Platform': 'WebPlayer',
-        },
+      const params = new URLSearchParams({
+        trackId: track.id || '',
+        title: track.title || '',
+        artist: track.artist || '',
+        spotifyToken: spotifyToken,
       });
 
+      const res = await fetch(`/api/spotify/lyrics?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        if (data && data.lyrics && data.lyrics.lines) {
-          const lines = [];
-          for (const line of data.lyrics.lines) {
-            if (line.words) {
-              lines.push({
-                ms: parseInt(line.startTimeMs || '0', 10),
-                text: line.words.trim(),
-              });
-            }
+        if (data && data.lines && Array.isArray(data.lines) && data.lines.length > 0) {
+          if (data.source === 'spotify_official') {
+            appendLog(`[SPOTIFY OFFICIAL LYRICS] Loaded ${data.lines.length} synced lyric lines directly from Spotify!`, 'success');
+          } else {
+            appendLog(`[LRCLIB] Loaded ${data.lines.length} synced lyric lines from LRCLIB database.`, 'lrclib');
           }
-          if (lines.length > 0) return lines;
+          return data.lines;
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      appendLog(`[ERROR] Failed to fetch lyrics: ${e.message}`, 'error');
+    }
 
     return null;
-  }
-
-  async function getLyricsForTrack(track) {
-    if (track && track.id) {
-      const officialLyrics = await fetchSpotifyOfficialLyrics(track.id);
-      if (officialLyrics && officialLyrics.length > 0) {
-        appendLog(`[SPOTIFY OFFICIAL LYRICS] Loaded ${officialLyrics.length} synced lyric lines directly from Spotify!`, 'success');
-        return officialLyrics;
-      }
-    }
-    return await fetchLyricsFromLRCLIB(track);
   }
 
   function cleanTrackTitle(title) {
