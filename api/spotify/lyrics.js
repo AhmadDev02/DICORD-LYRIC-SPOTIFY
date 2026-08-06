@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const USER_AGENT = 'DiscordSpotifyLyricStatus/1.0 (https://github.com/AhmadDev02/DICORD-LYRIC-SPOTIFY)';
+const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 function cleanTrackTitle(title) {
   if (!title) return '';
@@ -49,7 +50,7 @@ function convertPlainLyricsToTimed(plainText, durationMs = 180000) {
   const lines = plainText
     .split('\n')
     .map((l) => l.trim())
-    .filter((l) => l.length > 0 && !l.startsWith('[') && !l.endsWith(']'));
+    .filter((l) => l.length > 0 && !l.startsWith('[') && !l.endsWith(']') && !l.endsWith('Lyrics') && !l.includes('Contributors'));
 
   if (lines.length === 0) return [];
   const timePerLine = Math.max(2500, Math.floor((durationMs - 5000) / lines.length));
@@ -63,6 +64,41 @@ function convertPlainLyricsToTimed(plainText, durationMs = 180000) {
   }
 
   return result;
+}
+
+async function queryGenius(q, durationMs = 180000) {
+  try {
+    const searchRes = await fetch(`https://genius.com/api/search/multi?q=${encodeURIComponent(q)}`, {
+      headers: { 'User-Agent': BROWSER_UA },
+    });
+    if (searchRes.ok) {
+      const data = await searchRes.json();
+      const hits = data.response?.sections?.find((s) => s.type === 'song')?.hits;
+      if (Array.isArray(hits) && hits.length > 0) {
+        const songUrl = hits[0].result.url;
+        const pageRes = await fetch(songUrl, {
+          headers: { 'User-Agent': BROWSER_UA },
+        });
+        if (pageRes.ok) {
+          const html = await pageRes.text();
+          const match = html.match(/<div data-lyrics-container=\"true\"[^>]*>(.*?)<\/div>/gs);
+          if (match) {
+            const rawText = match
+              .join('\n')
+              .replace(/<br\s*\/?>/gi, '\n')
+              .replace(/<[^>]+>/g, '')
+              .replace(/&#x27;/g, "'")
+              .replace(/&amp;/g, '&')
+              .replace(/&quot;/g, '"');
+
+            const timedLines = convertPlainLyricsToTimed(rawText, durationMs);
+            if (timedLines.length > 0) return timedLines;
+          }
+        }
+      }
+    }
+  } catch (e) {}
+  return null;
 }
 
 export default async function handler(req, res) {
@@ -162,6 +198,13 @@ export default async function handler(req, res) {
     } catch (e) {}
   }
 
+  // 2. Try Genius Web Search (Extensive Catalog for Indie & Global Songs)
+  const geniusLines = (await queryGenius(fullSearchQuery, durationMs)) || (await queryGenius(shortSearchQuery, durationMs));
+  if (geniusLines) {
+    res.status(200).json({ source: 'genius', lines: geniusLines });
+    return;
+  }
+
   // Helper to query NetEase
   async function queryNetEase(q) {
     try {
@@ -170,7 +213,7 @@ export default async function handler(req, res) {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           Referer: 'https://music.163.com',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'User-Agent': BROWSER_UA,
         },
         body: new URLSearchParams({ s: q, type: '1', offset: '0', limit: '5' }).toString(),
       });
@@ -180,7 +223,7 @@ export default async function handler(req, res) {
         if (Array.isArray(songs) && songs.length > 0) {
           for (const song of songs) {
             const lyricRes = await fetch(`https://music.163.com/api/song/lyric?os=pc&id=${song.id}&lv=-1&kv=-1&tv=-1`, {
-              headers: { Referer: 'https://music.163.com', 'User-Agent': 'Mozilla/5.0' },
+              headers: { Referer: 'https://music.163.com', 'User-Agent': BROWSER_UA },
             });
             if (lyricRes.ok) {
               const lyricData = await lyricRes.json();
@@ -196,14 +239,14 @@ export default async function handler(req, res) {
     return null;
   }
 
-  // 2. Try NetEase Cloud Music API
+  // 3. Try NetEase Cloud Music API
   const neteaseLines = (await queryNetEase(fullSearchQuery)) || (await queryNetEase(shortSearchQuery));
   if (neteaseLines) {
     res.status(200).json({ source: 'netease', lines: neteaseLines });
     return;
   }
 
-  // Helper to query LRCLIB with User-Agent
+  // Helper to query LRCLIB
   async function queryLRCLIB(q) {
     try {
       const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`, {
@@ -230,7 +273,7 @@ export default async function handler(req, res) {
     return null;
   }
 
-  // 3. Try LRCLIB Exact & Fuzzy Search
+  // 4. Try LRCLIB Search
   const lrclibRes = (await queryLRCLIB(fullSearchQuery)) || (await queryLRCLIB(shortSearchQuery));
   if (lrclibRes) {
     res.status(200).json(lrclibRes);

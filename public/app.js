@@ -496,8 +496,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (res.ok) {
         const data = await res.json();
         if (data && data.lines && Array.isArray(data.lines) && data.lines.length > 0) {
-          if (data.source === 'spotify_official') {
+          if (data.source === 'spotify_official' || data.source === 'spotify_official_auto_timed') {
             appendLog(`[SPOTIFY OFFICIAL LYRICS] Loaded ${data.lines.length} synced lyric lines directly from Spotify!`, 'success');
+          } else if (data.source === 'genius') {
+            appendLog(`[GENIUS LYRICS] Loaded ${data.lines.length} lyric lines from Genius Database!`, 'success');
           } else if (data.source === 'netease') {
             appendLog(`[NETEASE LYRICS] Loaded ${data.lines.length} synced lyric lines from NetEase Cloud Music!`, 'success');
           } else if (data.source === 'lrclib_plain_auto_timed') {
