@@ -18,6 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let gatewayEngine = null;
 
+  // Check URL parameters for Spotify connection callback
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('spotify_connected') === '1') {
+    appendLog('[SPOTIFY] Spotify account successfully connected & authorized!', 'success');
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
   // Load stored configurations sequentially
   const storedToken = localStorage.getItem('discord_token');
   if (storedToken) {
@@ -280,8 +287,52 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 1000);
     }
 
+    async pollSpotifyDirectAPI() {
+      const spotifyToken = localStorage.getItem('spotify_access_token');
+      if (!spotifyToken) return false;
+
+      try {
+        const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+          headers: { Authorization: `Bearer ${spotifyToken}` },
+        });
+
+        if (res.status === 401) {
+          localStorage.removeItem('spotify_access_token');
+          return false;
+        }
+
+        if (res.ok && res.status === 200) {
+          const data = await res.json();
+          if (data && data.is_playing && data.item) {
+            const track = data.item;
+            this.lastSpotifyActivity = {
+              name: 'Spotify',
+              type: 2,
+              details: track.name,
+              state: track.artists ? track.artists.map((a) => a.name).join(', ') : 'Unknown Artist',
+              sync_id: track.id,
+              timestamps: {
+                start: Date.now() - (data.progress_ms || 0),
+                end: Date.now() + (track.duration_ms - (data.progress_ms || 0)),
+              },
+              assets: { large_text: track.album ? track.album.name : '' },
+            };
+            return true;
+          }
+        }
+      } catch (e) {}
+
+      return false;
+    }
+
     async pollRestProfileFallback() {
       if (!this.token) return;
+
+      // 1. Try Direct Spotify OAuth API if connected
+      const foundViaSpotify = await this.pollSpotifyDirectAPI();
+      if (foundViaSpotify) return;
+
+      // 2. Fallback to Vercel Serverless Sync API
       try {
         const offset = offsetInput.value || 0;
         const res = await fetch(`/api/sync?token=${encodeURIComponent(this.token)}&offset=${offset}`);
@@ -319,13 +370,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // If no Spotify activity detected yet via WebSocket, poll Serverless REST sync fallback every 2.5 seconds
-      if (!this.lastSpotifyActivity) {
-        const now = Date.now();
-        if (now - this.restFallbackTimer > 2500) {
-          this.restFallbackTimer = now;
-          await this.pollRestProfileFallback();
-        }
+      // Poll Spotify Direct API or Serverless fallback every 2 seconds
+      const now = Date.now();
+      if (now - this.restFallbackTimer > 2000) {
+        this.restFallbackTimer = now;
+        await this.pollRestProfileFallback();
       }
 
       // Check if active song expired

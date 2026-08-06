@@ -42,7 +42,7 @@ export default async function handler(req, res) {
           displayName = userData.display_name || userData.email || displayName;
         }
       } catch (e) {
-        // Ignore user profile fetch error on free accounts
+        // Ignore free account profile error
       }
 
       res.setHeader('Content-Type', 'text/html');
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
             .icon { font-size: 3.5rem; margin-bottom: 1rem; }
             h1 { color: #1ed760; font-size: 1.6rem; margin-bottom: 0.5rem; }
             p { color: #9ca3af; font-size: 0.95rem; margin-bottom: 1.8rem; }
-            .btn { background: #5865f2; color: white; padding: 0.75rem 1.5rem; border-radius: 12px; text-decoration: none; font-weight: bold; display: inline-block; transition: transform 0.15s; }
+            .btn { background: #1ed760; color: #000; padding: 0.75rem 1.5rem; border-radius: 12px; text-decoration: none; font-weight: bold; display: inline-block; transition: transform 0.15s; cursor: pointer; }
             .btn:hover { transform: translateY(-2px); }
           </style>
         </head>
@@ -67,8 +67,16 @@ export default async function handler(req, res) {
             <div class="icon">🎉</div>
             <h1>Spotify Connected!</h1>
             <p>Welcome, <strong>${displayName}</strong>! Your Spotify account has been authorized.</p>
-            <a href="/" class="btn">Return to Dashboard</a>
+            <button onclick="finishAuth()" class="btn">Return to Dashboard</button>
           </div>
+          <script>
+            localStorage.setItem('spotify_access_token', '${data.access_token}');
+            ${data.refresh_token ? `localStorage.setItem('spotify_refresh_token', '${data.refresh_token}');` : ''}
+            function finishAuth() {
+              window.location.href = '/?spotify_connected=1';
+            }
+            setTimeout(finishAuth, 1500);
+          </script>
         </body>
         </html>
       `);
