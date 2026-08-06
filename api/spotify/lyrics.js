@@ -51,12 +51,32 @@ export default async function handler(req, res) {
 
   const cleanedTitle = cleanTrackTitle(title);
   const searchQuery = `${cleanedTitle || title} ${artist}`.trim();
-  const cleanToken = spotifyToken ? spotifyToken.replace('Bearer ', '').trim() : '';
+  let cleanToken = spotifyToken ? spotifyToken.replace('Bearer ', '').trim() : '';
+
+  // 0. If no user Spotify token, generate server Client Credentials token automatically
+  if (!cleanToken && process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET) {
+    try {
+      const credRes = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: 'Basic ' + Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64'),
+        },
+        body: new URLSearchParams({ grant_type: 'client_credentials' }).toString(),
+      });
+      if (credRes.ok) {
+        const credData = await credRes.json();
+        if (credData.access_token) {
+          cleanToken = credData.access_token;
+        }
+      }
+    } catch (e) {}
+  }
 
   // 1. Try Spotify Official Color-Lyrics API
   if (cleanToken) {
     try {
-      // If trackId is not a valid 22-char Spotify ID, search Spotify Web API to resolve the real trackId
+      // If trackId is missing or not a 22-char Spotify ID, resolve real ID via Spotify Search API
       if (!trackId || trackId.includes('-') || trackId.length !== 22) {
         const searchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery)}&type=track&limit=1`;
         const searchRes = await fetch(searchUrl, {
