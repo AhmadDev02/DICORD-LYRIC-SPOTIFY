@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const discordTokenInput = document.getElementById('discord-token-input');
   const saveDiscordTokenBtn = document.getElementById('save-discord-token-btn');
+  const clearDiscordTokenBtn = document.getElementById('clear-discord-token-btn');
   const spotifyLoginBtn = document.getElementById('spotify-login-btn');
   const userProfileBadge = document.getElementById('user-profile-badge');
   const userStatusDot = document.getElementById('user-status-dot');
@@ -21,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const storedToken = localStorage.getItem('discord_token');
   if (storedToken) {
     discordTokenInput.value = storedToken;
+    clearDiscordTokenBtn.classList.remove('hidden');
     updateUserBadge(storedToken);
   }
 
@@ -41,9 +43,21 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     localStorage.setItem('discord_token', token);
+    clearDiscordTokenBtn.classList.remove('hidden');
     appendLog('[DISCORD] Token saved to local browser storage.', 'success');
     await updateUserBadge(token);
     alert('Discord Token saved successfully!');
+  });
+
+  clearDiscordTokenBtn.addEventListener('click', () => {
+    localStorage.removeItem('discord_token');
+    discordTokenInput.value = '';
+    clearDiscordTokenBtn.classList.add('hidden');
+    userProfileBadge.classList.add('hidden');
+    stopGatewaySync();
+    toggleSyncBtn.checked = false;
+    appendLog('[DISCORD] Token removed from browser storage.', 'warning');
+    alert('Discord Token cleared!');
   });
 
   spotifyLoginBtn.addEventListener('click', () => {
