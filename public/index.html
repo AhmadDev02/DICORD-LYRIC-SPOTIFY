@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Outfit:wght@300;400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="glass-bg"></div>
@@ -31,7 +31,7 @@
     </header>
 
     <main class="main-content">
-      <!-- Welcome & Setup Card -->
+      <!-- Setup Card -->
       <section id="setup-section" class="card setup-card">
         <div class="card-header">
           <h2>🚀 Connect Your Accounts</h2>
@@ -98,6 +98,23 @@
           <div class="lyric-ticker-box">
             <div class="ticker-label">CURRENT DISCORD STATUS:</div>
             <div class="ticker-text" id="live-lyric-text">🎵 Waiting for Spotify playback...</div>
+          </div>
+        </div>
+
+        <!-- Terminal Console Logger Box -->
+        <div class="terminal-card">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <div class="terminal-title">>_ ENGINE TERMINAL CONSOLE LOGS</div>
+            <button id="clear-console-btn" class="btn-clear">Clear Logs</button>
+          </div>
+          <div id="terminal-logs" class="terminal-logs">
+            <div class="log-line log-info">[ENGINE] Initializing Web LyricStatus Engine...</div>
+            <div class="log-line log-info">[SYSTEM] Ready to connect Discord & Spotify.</div>
           </div>
         </div>
 
