@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+const USER_AGENT = 'DiscordSpotifyLyricStatus/1.0 (https://github.com/AhmadDev02/DICORD-LYRIC-SPOTIFY)';
+
 function cleanTrackTitle(title) {
   if (!title) return '';
   return title
@@ -126,7 +128,7 @@ export default async function handler(req, res) {
           headers: {
             Authorization: `Bearer ${cleanToken}`,
             'App-Platform': 'WebPlayer',
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'User-Agent': USER_AGENT,
           },
         });
 
@@ -186,17 +188,19 @@ export default async function handler(req, res) {
     return null;
   }
 
-  // 2. Try NetEase Cloud Music API (Full & Short Queries)
+  // 2. Try NetEase Cloud Music API
   const neteaseLines = (await queryNetEase(fullSearchQuery)) || (await queryNetEase(shortSearchQuery));
   if (neteaseLines) {
     res.status(200).json({ source: 'netease', lines: neteaseLines });
     return;
   }
 
-  // Helper to query LRCLIB
+  // Helper to query LRCLIB with User-Agent
   async function queryLRCLIB(q) {
     try {
-      const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
+      const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`, {
+        headers: { 'User-Agent': USER_AGENT },
+      });
       if (searchRes.ok) {
         const searchData = await searchRes.json();
         if (Array.isArray(searchData) && searchData.length > 0) {
@@ -218,7 +222,7 @@ export default async function handler(req, res) {
     return null;
   }
 
-  // 3. Try LRCLIB Exact & Fuzzy Search (Full & Short Queries)
+  // 3. Try LRCLIB Exact & Fuzzy Search
   const lrclibRes = (await queryLRCLIB(fullSearchQuery)) || (await queryLRCLIB(shortSearchQuery));
   if (lrclibRes) {
     res.status(200).json(lrclibRes);
