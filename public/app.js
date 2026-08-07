@@ -175,6 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
       this.token = token;
       this.ws = null;
       this.heartbeatInterval = null;
+      this.reconnectTimer = null;
+      this.isManualDisconnect = false;
       this.sequence = null;
       this.selfUserId = null;
       this.userStatus = 'online';
@@ -187,6 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     connect() {
+      this.isManualDisconnect = false;
       appendLog('[DISCORD] Connecting to Discord Gateway...', 'info');
       this.ws = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json');
 
@@ -207,6 +210,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (this.ws) {
           appendLog(`[DISCORD] Gateway Connection Closed (code ${e.code}).`, 'warning');
           this.cleanup();
+          if (!this.isManualDisconnect) {
+            appendLog('[DISCORD] Connection lost. Auto-reconnecting in 3 seconds...', 'info');
+            this.reconnectTimer = setTimeout(() => {
+              if (!this.isManualDisconnect) {
+                this.connect();
+              }
+            }, 3000);
+          }
         }
       };
 
@@ -482,12 +493,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cleanup() {
       if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
+      if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
       if (this.loopInterval) clearInterval(this.loopInterval);
       this.heartbeatInterval = null;
+      this.reconnectTimer = null;
       this.loopInterval = null;
     }
 
     disconnect() {
+      this.isManualDisconnect = true;
       this.cleanup();
       if (this.ws) {
         this.ws.onclose = null;
