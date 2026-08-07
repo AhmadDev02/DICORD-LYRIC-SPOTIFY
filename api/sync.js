@@ -18,7 +18,6 @@ export default async function handler(req, res) {
       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     };
 
-    // 1. Get Self User Info
     const meRes = await fetch('https://discord.com/api/v9/users/@me', { headers });
     if (!meRes.ok) {
       logs.push(`[ERROR] Invalid Discord Token (HTTP ${meRes.status}). Please check your token.`);
@@ -30,7 +29,6 @@ export default async function handler(req, res) {
     const userId = meData.id;
     const username = meData.username;
 
-    // 2. Fetch User Profile & Activities
     const profileRes = await fetch(`https://discord.com/api/v9/users/${userId}/profile`, { headers });
     let activities = [];
     let userStatus = 'online';
@@ -43,7 +41,6 @@ export default async function handler(req, res) {
 
     logs.push(`[DISCORD] Authenticated as ${username} (${userId}) [Status: ${userStatus}]`);
 
-    // 3. STATUS RULE: Allow online, idle, dnd. Disable if INVISIBLE/OFFLINE
     if (userStatus === 'invisible' || userStatus === 'offline') {
       logs.push(`[STATUS RULE] User is INVISIBLE/OFFLINE. Skipping status updates.`);
       res.status(200).json({
@@ -58,7 +55,6 @@ export default async function handler(req, res) {
       return;
     }
 
-    // 4. Find Spotify Activity
     const spotifyAct = activities.find(
       (a) => a.name === 'Spotify' || a.type === 2 || (a.party && a.party.id && a.party.id.startsWith('spotify:'))
     );
@@ -90,7 +86,6 @@ export default async function handler(req, res) {
 
     logs.push(`[SPOTIFY NOW PLAYING] ${track.title} - ${track.artist}`);
 
-    // 5. Fetch Synced Lyrics from LRCLIB
     const lyrics = await fetchLyrics(track);
     let activeLine = null;
     if (lyrics && lyrics.length > 0) {
@@ -103,7 +98,6 @@ export default async function handler(req, res) {
     const lyricText = activeLine ? activeLine.text : `🎵 ${track.title}`;
     const formattedStatus = `🎵 | ${lyricText}`.substring(0, 128);
 
-    // 6. Update Discord Status via REST API
     const patchRes = await fetch('https://discord.com/api/v9/users/@me/settings', {
       method: 'PATCH',
       headers: {

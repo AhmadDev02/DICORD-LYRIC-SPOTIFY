@@ -15,7 +15,6 @@ export async function fetchDiscordSpotifyPresence(token) {
     const activities = data.user_profile?.activities || data.activities || [];
     const status = data.user_profile?.status || data.status || 'online';
 
-    // If status is invisible or offline, do not process
     if (status === 'invisible' || status === 'offline') {
       return { isPlaying: false, track: null, isInvisible: true, userStatus: status };
     }
@@ -103,15 +102,15 @@ export class DiscordGatewayClient {
     }
 
     switch (op) {
-      case 10: // Hello
+      case 10:
         this.startHeartbeat(d.heartbeat_interval);
         this.identify();
         break;
 
-      case 11: // Heartbeat ACK
+      case 11:
         break;
 
-      case 0: // Event Dispatch
+      case 0:
         if (t === 'READY') {
           this.isConnected = true;
           this.selfUserId = d.user.id;
@@ -146,8 +145,8 @@ export class DiscordGatewayClient {
         }
         break;
 
-      case 7: // Reconnect
-      case 9: // Invalid Session
+      case 7:
+      case 9:
         console.warn('[DISCORD] Received Reconnect/Invalid Session opcode from Gateway.');
         this.reconnect();
         break;
@@ -157,7 +156,6 @@ export class DiscordGatewayClient {
   parseActivities(activities) {
     if (!activities || !Array.isArray(activities)) return;
 
-    // Filter out if user status is invisible
     if (this.userStatus === 'invisible' || this.userStatus === 'offline') {
       return;
     }
@@ -232,7 +230,6 @@ export class DiscordGatewayClient {
   }
 
   updateCustomStatus(text) {
-    // DO NOT update status if user status is invisible or offline
     if (this.userStatus === 'invisible' || this.userStatus === 'offline') {
       console.log('\x1b[33m[DISCORD STATUS]\x1b[0m Skipping status update because user status is INVISIBLE/OFFLINE.');
       return;
@@ -246,7 +243,6 @@ export class DiscordGatewayClient {
       return;
     }
 
-    // 1. Gateway OP 3 Presence Update
     const activities = text
       ? [
           {
@@ -274,7 +270,6 @@ export class DiscordGatewayClient {
       }
     } catch (e) {}
 
-    // 2. Direct REST API PATCH /users/@me/settings
     try {
       await fetch('https://discord.com/api/v9/users/@me/settings', {
         method: 'PATCH',

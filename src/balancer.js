@@ -12,7 +12,6 @@ export class StatusBalancer {
     if (!lyricText) return null;
     const prefix = config.statusPrefix || '';
     const fullText = `${prefix}${lyricText}`;
-    // Discord custom status limit is 128 chars
     return fullText.length > 128 ? fullText.substring(0, 125) + '...' : fullText;
   }
 

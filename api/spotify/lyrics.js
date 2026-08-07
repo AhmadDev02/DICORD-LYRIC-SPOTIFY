@@ -130,7 +130,6 @@ export default async function handler(req, res) {
 
   let userSpotifyToken = spotifyToken ? spotifyToken.replace('Bearer ', '').trim() : '';
 
-  // 1. Try Spotify Official Color-Lyrics API using User Token or App Token
   let cleanToken = userSpotifyToken;
   if (!cleanToken && process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET) {
     try {
@@ -206,14 +205,12 @@ export default async function handler(req, res) {
     } catch (e) {}
   }
 
-  // 2. Try Genius Web Search (Extensive Catalog for Indie & Global Songs)
   const geniusLines = (await queryGenius(fullSearchQuery, durationMs)) || (await queryGenius(shortSearchQuery, durationMs));
   if (geniusLines) {
     res.status(200).json({ source: 'genius', lines: geniusLines });
     return;
   }
 
-  // Helper to query NetEase
   async function queryNetEase(q) {
     try {
       const neteaseRes = await fetch(`https://music.163.com/api/search/pc`, {
@@ -247,14 +244,12 @@ export default async function handler(req, res) {
     return null;
   }
 
-  // 3. Try NetEase Cloud Music API
   const neteaseLines = (await queryNetEase(fullSearchQuery)) || (await queryNetEase(shortSearchQuery));
   if (neteaseLines) {
     res.status(200).json({ source: 'netease', lines: neteaseLines });
     return;
   }
 
-  // Helper to query LRCLIB
   async function queryLRCLIB(q) {
     try {
       const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`, {
@@ -281,7 +276,6 @@ export default async function handler(req, res) {
     return null;
   }
 
-  // 4. Try LRCLIB Search
   const lrclibRes = (await queryLRCLIB(fullSearchQuery)) || (await queryLRCLIB(shortSearchQuery));
   if (lrclibRes) {
     res.status(200).json(lrclibRes);

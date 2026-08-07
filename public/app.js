@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let gatewayEngine = null;
 
-  // Check URL parameters for Spotify connection callback
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('spotify_connected') === '1') {
     appendLog('[SPOTIFY] Spotify account successfully connected & authorized!', 'success');
@@ -39,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.removeItem(key);
   }
 
-  // Load stored configurations sequentially
   const storedToken = getSecureToken('discord_token');
   if (storedToken) {
     discordTokenInput.value = storedToken;
@@ -59,7 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
     offsetInput.value = storedOffset;
   }
 
-  // Check Copyright Integrity
   const footerText = document.querySelector('.app-footer')?.textContent || '';
   if (!footerText.includes('AhmadDev02')) {
     appendLog('[COPYRIGHT WARNING] Project ini memiliki hak cipta ciptaan AhmadDev02. Modifikasi tanpa izin terdeteksi!', 'error');
@@ -251,7 +248,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (s !== null && s !== undefined) this.sequence = s;
 
       if (op === 10) {
-        // Hello -> Heartbeat & Identify
         this.heartbeatInterval = setInterval(() => {
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({ op: 1, d: this.sequence }));
@@ -376,11 +372,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async pollRestProfileFallback() {
       if (!this.token) return;
 
-      // 1. Try Direct Spotify OAuth API if connected
       const foundViaSpotify = await this.pollSpotifyDirectAPI();
       if (foundViaSpotify) return;
 
-      // 2. Fallback to Vercel Serverless Sync API
       try {
         const offset = offsetInput.value || 0;
         const res = await fetch(`/api/sync?offset=${offset}`, {
@@ -412,7 +406,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async syncTick() {
-      // Check Status Rule
       if (this.userStatus === 'invisible' || this.userStatus === 'offline') {
         liveLyricTextEl.textContent = '⚪ Status is INVISIBLE. Sync paused automatically.';
         trackTitleEl.textContent = 'Status is Invisible';
@@ -424,14 +417,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Poll Spotify Direct API or Serverless fallback every 2 seconds
       const now = Date.now();
       if (now - this.restFallbackTimer > 2000) {
         this.restFallbackTimer = now;
         await this.pollRestProfileFallback();
       }
 
-      // Check if active song expired
       if (this.lastSpotifyActivity && this.lastSpotifyActivity.timestamps && this.lastSpotifyActivity.timestamps.end) {
         if (Date.now() > this.lastSpotifyActivity.timestamps.end + 5000) {
           this.lastSpotifyActivity = null;
@@ -463,7 +454,6 @@ document.addEventListener('DOMContentLoaded', () => {
       trackTitleEl.textContent = track.title;
       trackArtistEl.textContent = track.artist;
 
-      // Track change
       if (this.currentTrackId !== track.id) {
         this.currentTrackId = track.id;
         appendLog(`[SPOTIFY NOW PLAYING] ${track.title} - ${track.artist}`, 'spotify');
@@ -584,7 +574,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function fetchLyricsFromLRCLIB(track) {
     try {
-      // 1. Try Exact Match
       const params = new URLSearchParams({
         track_name: track.title,
         artist_name: track.artist,
@@ -598,7 +587,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data && data.syncedLyrics) return parseLRC(data.syncedLyrics);
       }
 
-      // 2. Try Clean Title Match
       const cleaned = cleanTrackTitle(track.title);
       if (cleaned && cleaned !== track.title) {
         const cleanParams = new URLSearchParams({
@@ -612,7 +600,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // 3. Fallback to Fuzzy Search
       const searchQuery = `${cleaned || track.title} ${track.artist}`.trim();
       const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(searchQuery)}`);
       if (searchRes.ok) {
