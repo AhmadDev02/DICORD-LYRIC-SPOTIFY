@@ -202,6 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
       this.lastStatusText = null;
       this.lastSpotifyActivity = null;
       this.loopInterval = null;
+      this.worker = null;
+      this.isTicking = false;
       this.restFallbackTimer = 0;
     }
 
@@ -326,9 +328,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
     startSyncLoop() {
       if (this.loopInterval) clearInterval(this.loopInterval);
-      this.loopInterval = setInterval(async () => {
-        await this.syncTick();
-      }, 1000);
+      if (this.worker) {
+        this.worker.postMessage('stop');
+        this.worker.terminate();
+        this.worker = null;
+      }
+
+      const runTickSafe = async () => {
+        if (this.isTicking) return;
+        this.isTicking = true;
+        try {
+          await this.syncTick();
+        } finally {
+          this.isTicking = false;
+        }
+      };
+
+      try {
+        const workerCode = `
+          let timer = null;
+          onmessage = function(e) {
+            if (e.data === 'start') {
+              if (timer) clearInterval(timer);
+              timer = setInterval(() => { postMessage('tick'); }, 1000);
+            } else if (e.data === 'stop') {
+              if (timer) clearInterval(timer);
+              timer = null;
+            }
+          };
+        `;
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        this.worker = new Worker(URL.createObjectURL(blob));
+        this.worker.onmessage = async (e) => {
+          if (e.data === 'tick') {
+            await runTickSafe();
+          }
+        };
+        this.worker.postMessage('start');
+        appendLog('[ENGINE] Background Web Worker active (Runs continuously when tab is hidden)!', 'success');
+      } catch (err) {
+        this.loopInterval = setInterval(async () => {
+          await runTickSafe();
+        }, 1000);
+      }
     }
 
     async pollSpotifyDirectAPI() {
@@ -505,6 +547,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
       if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
       if (this.loopInterval) clearInterval(this.loopInterval);
+      if (this.worker) {
+        this.worker.postMessage('stop');
+        this.worker.terminate();
+        this.worker = null;
+      }
       this.heartbeatInterval = null;
       this.reconnectTimer = null;
       this.loopInterval = null;
