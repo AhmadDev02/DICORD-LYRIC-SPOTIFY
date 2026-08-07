@@ -636,6 +636,36 @@ input:checked + .slider:before { transform: translateX(20px); }
   border-radius: 12px;
 }
 
+.config-guide-steps {
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.config-guide-steps li {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--panel-border);
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.config-guide-steps li strong {
+  color: white;
+}
+
+.config-guide-steps li code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  color: #38bdf8;
+  font-size: 0.75rem;
+}
+
 .type-synced {
   border-top: 3px solid #34d399;
 }
