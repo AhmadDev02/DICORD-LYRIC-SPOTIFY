@@ -50,7 +50,10 @@
                 <button id="save-discord-token-btn" class="btn btn-secondary">Save</button>
                 <button id="clear-discord-token-btn" class="btn btn-danger hidden">Clear</button>
               </div>
-              <small class="help-text">🔒 Tokens are stored safely in your local browser session.</small>
+              <div class="help-action-bar">
+                <small class="help-text">🔒 Tokens are stored safely in your local browser session.</small>
+                <button type="button" id="token-guide-btn" class="btn-help-link">❓ Cara Ambil Discord Token</button>
+              </div>
             </div>
           </div>
 
@@ -191,6 +194,47 @@
     <footer class="app-footer">
       <p>Built by AhmadDev02 • Universal Web Platform for Discord & Spotify</p>
     </footer>
+  </div>
+
+  <!-- Modal Panduan Ambil Discord Token -->
+  <div id="token-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📖 Panduan Cara Mengambil Discord User Token</h3>
+        <button id="close-modal-btn" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <ol class="guide-steps">
+          <li>
+            <strong>1. Buka Discord di Web Browser Komputer</strong>
+            <p>Buka <a href="https://discord.com/app" target="_blank" rel="noopener">https://discord.com/app</a> di Chrome, Edge, Brave, atau Firefox dan pastikan Anda sudah login ke akun Discord Anda.</p>
+          </li>
+          <li>
+            <strong>2. Buka Developer Tools (Inspect Element)</strong>
+            <p>Tekan tombol keyboard <kbd>F12</kbd> (atau <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>I</kbd> di Windows / <kbd>Cmd</kbd> + <kbd>Option</kbd> + <kbd>I</kbd> di Mac).</p>
+          </li>
+          <li>
+            <strong>3. Buka Tab Network</strong>
+            <p>Pada panel Developer Tools di sebelah kanan/bawah, klik tab menu <strong>Network</strong>.</p>
+          </li>
+          <li>
+            <strong>4. Kirim Pesan / Klik Channel</strong>
+            <p>Ketik pesan apa saja di chat Discord atau klik salah satu server/channel agar lalu lintas data jaringan berjalan.</p>
+          </li>
+          <li>
+            <strong>5. Filter & Cari "messages" atau "api"</strong>
+            <p>Pada kotak pencarian (Filter) di tab Network, ketik <code>messages</code> atau <code>api</code>. Klik salah satu hasil permintaan yang muncul (misalnya <code>messages</code>).</p>
+          </li>
+          <li>
+            <strong>6. Salin Kode "authorization"</strong>
+            <p>Klik tab <strong>Headers</strong> &gt; gulir ke bawah ke bagian <strong>Request Headers</strong>. Cari teks <code>authorization:</code>. Kode acak panjang di sebelahnya adalah <strong>Discord User Token</strong> Anda!</p>
+          </li>
+        </ol>
+        <div class="modal-warning-box">
+          ⚠️ <strong>PERINGATAN KEAMANAN:</strong> Jangan pernah memberikan Discord Token Anda kepada siapapun! Token di aplikasi ini disimpan 100% aman di memori browser Anda sendiri.
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>

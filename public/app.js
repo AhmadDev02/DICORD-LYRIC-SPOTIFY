@@ -65,6 +65,26 @@ document.addEventListener('DOMContentLoaded', () => {
     appendLog('[COPYRIGHT WARNING] Project ini memiliki hak cipta ciptaan AhmadDev02. Modifikasi tanpa izin terdeteksi!', 'error');
   }
 
+  const tokenGuideBtn = document.getElementById('token-guide-btn');
+  const tokenModal = document.getElementById('token-modal');
+  const closeModalBtn = document.getElementById('close-modal-btn');
+
+  if (tokenGuideBtn && tokenModal && closeModalBtn) {
+    tokenGuideBtn.addEventListener('click', () => {
+      tokenModal.classList.remove('hidden');
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+      tokenModal.classList.add('hidden');
+    });
+
+    tokenModal.addEventListener('click', (e) => {
+      if (e.target === tokenModal) {
+        tokenModal.classList.add('hidden');
+      }
+    });
+  }
+
   clearConsoleBtn.addEventListener('click', () => {
     terminalLogsEl.innerHTML = '';
     appendLog('[SYSTEM] Console logs cleared.', 'info');
