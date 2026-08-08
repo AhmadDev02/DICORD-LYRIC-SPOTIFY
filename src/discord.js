@@ -153,6 +153,7 @@ export class DiscordGatewayClient {
     }
   }
 
+
   parseActivities(activities) {
     if (!activities || !Array.isArray(activities)) return;
 
