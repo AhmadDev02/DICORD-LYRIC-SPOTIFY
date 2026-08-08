@@ -230,12 +230,13 @@ document.addEventListener('DOMContentLoaded', () => {
           appendLog(`[DISCORD] Gateway Connection Closed (code ${e.code}).`, 'warning');
           this.cleanup();
           if (!this.isManualDisconnect) {
-            appendLog('[DISCORD] Connection lost. Auto-reconnecting in 3 seconds...', 'info');
+            const reconnectDelay = e.code === 1000 ? 1000 : 3000;
+            appendLog(`[DISCORD] Reconnecting to Gateway in ${reconnectDelay / 1000}s...`, 'info');
             this.reconnectTimer = setTimeout(() => {
               if (!this.isManualDisconnect) {
                 this.connect();
               }
-            }, 3000);
+            }, reconnectDelay);
           }
         }
       };
